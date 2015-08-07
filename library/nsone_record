@@ -200,7 +200,6 @@ def main():
 			record.delete(errback=errback_generator(module))
 			module.exit_json(changed=True)
 		else:
-			# we want to update it if changed
 			update(zone, record, module)
 	else:
 		if module.params.get('state') in DELETE_STATES:

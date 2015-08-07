@@ -87,7 +87,8 @@
               meta:
                 up: True
           filters:
-            - up: {}
+            - filter: up
+              config: {}
         register: return
 
       - debug: var=return
@@ -107,7 +108,8 @@
               meta:
                 up: True
           filters:
-            - up: {}
+            - filter: up
+              config: {}
           ttl: 3600
         register: return
 
@@ -128,7 +130,8 @@
               meta:
                 up: True
           filters:
-            - up: {}
+            - filter: up
+              config: {}
           ttl: 3600
         register: return
 

@@ -39,7 +39,7 @@ This was tested with ansible 1.9.2 and python 2.7.10.
 Examples
 ========
 
-Check out test.yml which is all working ansible code. We will be adding the standard ansible documentation to the modules themselves shortly.
+Check out test.yml which is all working ansible code. All of the resources try to model the [api](https://nsone.net/api/) objects as closely as possible. We will be adding the standard ansible documentation to the modules themselves shortly.
 
 Contributing
 ============
