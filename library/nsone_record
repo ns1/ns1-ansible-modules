@@ -371,21 +371,17 @@ def main():
 				'add_%s' % (module.params.get('type').upper())
 			)
 
-			try:
-				record = methodToCall(
-					module.params.get('name'),
-					module.params.get('answers'),
-					errback=errback_generator(module),
-					**api_params(module)
-				)
-				module.exit_json(
-					changed=True,
-					id=record['id'],
-					data=record['data']
-				)
-			except ResourceException as re:
-				module.fail_json(msg="%s" % repr(re))
-			module.exit_json(changed=True)
+			record = methodToCall(
+				module.params.get('name'),
+				module.params.get('answers'),
+				errback=errback_generator(module),
+				**api_params(module)
+			)
+			module.exit_json(
+				changed=True,
+				id=record['id'],
+				data=record.data
+			)
 			
 
 from ansible.module_utils.basic import *
