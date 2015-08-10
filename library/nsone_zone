@@ -1,4 +1,116 @@
 #!/usr/bin/python
+#
+# (c) 2015, Che Ruisi-Besares <cruisibesares@nsone.net>
+#
+# This file is part of Ansible
+#
+# Ansible is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Ansible is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+
+DOCUMENTATION = """
+module: nsone_zone
+short_description: "Add, modify & delete nsone hosted zones."
+description:
+ - This module is a light wrapper around the nsone api that allows for the
+   creation, modification, and deletion of nsone zone objects.
+ - Additional record attributes can be passed to the module as documented below.
+ - "See http://nsone.net/api/ for more details."
+requirements:
+  - "python >= 2.6"
+  - nsone >= 0.9.2
+version_added: "1.9.2"
+author: "Che Ruisi-Besares"
+options:
+    state:
+        description:
+          - create or destroy the zone, defaults to present. There is no
+            difference between present and active or absent and deleted.
+          - Be aware that deleting a zone will remove all records. 
+        required: true
+        choices: ['present', 'active', 'absent', 'deleted']
+    apiKey:
+        description:
+          - Unique client api key that can be created via the nsone portal.
+        required: true
+    name:
+        description:
+          - The domain of the zone.
+        required: true
+    refresh:
+        description:
+          - SOA zone value.
+        required: false
+        default: None
+    retry:
+        description:
+          - SOA zone value.
+        required: false
+        default: None
+    expiry:
+        description:
+          - SOA zone value.
+        required: false
+        default: None
+    next_ttl:
+        description:
+          - SOA zone value.
+        required: false
+        default: None
+    link:
+        description:
+          - The domain this zone should be linked to. If you specify link only
+            name, state and apiKey are allowed.
+        required: false
+        default: None
+    networks:
+        description:
+          - If your account has access to multiple DNS networks, you may pass in
+            networks, a list of network ids for which the zone should be made
+            available.
+        required: false
+        default: None
+    secondary:
+        description:
+          - To create a  secondary zone, you must include a secondary object.
+        required: false
+        default: None
+    primary:
+        description:
+          - To enable slaving of your zone by third party DNS servers, 
+            you must include a primary object. 
+        required: false
+        default: None
+"""
+
+EXAMPLES = '''
+  - name: create zone
+    local_action:
+      module: nsone_zone
+      apiKey: "{{ key }}"
+      name: "{{ test_zone }}"
+      state: present
+      refresh: 200            
+    register: return
+
+  - name: delete zone
+    local_action:
+      module: nsone_zone
+      apiKey: "{{ key }}"
+      name: "{{ test_zone }}"
+      state: absent
+    register: return
+
+'''
 
 
 try:
@@ -101,7 +213,16 @@ def main():
 								choices=STATES
 								),
 			),
-		supports_check_mode=True
+		supports_check_mode=True,
+		mutually_exclusive=[
+			[ 'link', 'networks' ],
+			[ 'link', 'retry' ],
+			[ 'link', 'expiry' ],
+			[ 'link', 'nx_ttl' ],			
+			[ 'link', 'secondary' ],			
+			[ 'link', 'primary' ],			
+			[ 'link', 'refresh' ]		
+		]
 	)
 
 	if not HAS_NSONE:

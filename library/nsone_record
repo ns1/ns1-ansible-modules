@@ -1,4 +1,160 @@
 #!/usr/bin/python
+#
+# (c) 2015, Che Ruisi-Besares <cruisibesares@nsone.net>
+#
+# This file is part of Ansible
+#
+# Ansible is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Ansible is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+
+DOCUMENTATION = """
+module: nsone_record
+short_description: "Add, modify & delete nsone hosted DNS records."
+description:
+ - This module is a light wrapper around the nsone api that allows for the
+   creation, modification, and deletion of nsone record objects.
+ - Additional record attributes can be passed to the module as documented below.
+ - "See http://nsone.net for more details."
+requirements:
+  - "python >= 2.6"
+  - nsone >= 0.9.2
+version_added: "1.9.2"
+author: "Che Ruisi-Besares"
+options:
+    state:
+        description:
+          - create or destroy the record, defaults to present. There is no
+            difference between present and active or absent and deleted. 
+        required: true
+        choices: ['present', 'active', 'absent', 'deleted']
+    apiKey:
+        description:
+          - Unique client api key that can be created via the nsone portal.
+        required: true
+    name:
+        description:
+          - The subdomain of the record. www for example.
+        required: true
+    zone:
+        description:
+          - the zone domain name for example example.com
+        required: true
+    answers:
+        description:
+          - This is the nsone answer object for this record. This can take
+            Many forms depending on record type and desired effect. See 
+            https://nsone.net/api/ for more details. As a note you can pass
+            an array or hash object via yml and it will passed directly to the
+            api.
+        required: true
+    ignore_missing_zone:
+        description:
+          - If you try to delete a record from a zone that has already been
+            deleted it will error. There are situations in which the user might
+            not care if the zone isn't there and just wants to ensure the record
+            is missing. In this case you can set this flag to True. This module
+            will then count any record that doesn't have a zone as absent.
+        required: false
+        default: False
+    type:
+        description:
+          - This is the record type of the record.
+        required: True
+        choices:
+          - A
+		  - AAAA 
+		  - ALIAS
+		  - AFSDB
+		  - CNAME
+		  - DNAME
+		  - HINFO
+		  - MX
+		  - NAPT
+		  - NS
+		  - PTR
+		  - RP
+		  - SPF
+		  - SRV
+		  - TXT
+    use_client_subnet:
+        description:
+          - direct pass through of the use_client_subnet record flag.
+        required: false
+        default: None
+    meta:
+        description:
+          - Record level meta data.
+        required: false
+        default: None
+    link:
+        description:
+          - Creates a linked record.
+        required: false
+        default: None
+    filters:
+        description:
+          - The filters object for the record. This has many forms depending on
+            the desired effect. Please read the notes section of the readme
+            accepted forms.
+        required: false
+        default: None
+    ttl:
+        description:
+          - ttl of the record.
+        required: false
+        default: 3600
+    regions:
+        description:
+          - The regions object for the record set.
+        required: false
+        default: None
+"""
+
+EXAMPLES = '''
+   - name: record creation
+        local_action:
+          module: nsone record
+          apiKey: "{{ key }}"
+          name: www
+          zone: "{{ test_zone }}"
+          state: present
+          type: A
+          answers:
+            - answer:
+                - 192.168.1.0
+              meta:
+                up: True
+            - answer:
+                - 192.168.1.1
+              meta:
+                up: True
+          filters:
+            - filter: up
+              config: {}
+        register: return
+
+      - name: record delete
+        local_action:
+          module: nsone_record
+          apiKey: "{{ key }}"
+          name: www
+          zone: "{{ test_zone }}"
+          state: absent
+          type: A
+          answers: []
+        register: return
+'''
+
 
 try:
 	from nsone import NSONE, Config
@@ -131,7 +287,7 @@ def update(zone, record, module):
 			args[i] = module.params.get(i)
 
 	if module.check_mode:
-		# check mode short circut before update
+		# check mode short circuit before update
 		module.exit_json(changed=changed)
 
 	if changed:
@@ -165,7 +321,7 @@ def main():
 			ttl		 			= dict(
 									required=False,
 									type='int',
-									default=None
+									default=3600
 								),
 			regions 			= dict(required=False, default=None),
 			state				= dict(
@@ -206,7 +362,7 @@ def main():
 			module.exit_json(changed=False)
 		else:
 			if module.check_mode:
-				# short circut in check mode
+				# short circuit in check mode
 				module.exit_json(changed=True)
 			
 
