@@ -10,7 +10,7 @@
     ##
       - name: create zone test
         local_action:
-          module: nsone_zone
+          module: ns1_zone
           apiKey: "{{ key }}"
           name: "{{ test_zone }}"
           state: present
@@ -22,7 +22,7 @@
 
       - name: update zone test
         local_action:
-          module: nsone_zone
+          module: ns1_zone
           apiKey: "{{ key }}"
           name: "{{ test_zone }}"
           state: present
@@ -34,7 +34,7 @@
 
       - name: no update zone test
         local_action:
-          module: nsone_zone
+          module: ns1_zone
           apiKey: "{{ key }}"
           name: "{{ test_zone }}"
           state: present
@@ -46,7 +46,7 @@
 
       - name: delete zone test
         local_action:
-          module: nsone_zone
+          module: ns1_zone
           apiKey: "{{ key }}"
           name: "{{ test_zone }}"
           state: absent
@@ -60,7 +60,7 @@
     ##
       - name: create zone for record tests
         local_action:
-          module: nsone_zone
+          module: ns1_zone
           apiKey: "{{ key }}"
           name: "{{ test_zone }}"
           state: present
@@ -71,7 +71,7 @@
 
       - name: test record creation
         local_action:
-          module: nsone_record
+          module: ns1_record
           apiKey: "{{ key }}"
           name: www
           zone: "{{ test_zone }}"
@@ -96,7 +96,7 @@
 
       - name: update record test
         local_action:
-          module: nsone_record
+          module: ns1_record
           apiKey: "{{ key }}"
           name: www
           zone: "{{ test_zone }}"
@@ -118,7 +118,7 @@
 
       - name: test record no change
         local_action:
-          module: nsone_record
+          module: ns1_record
           apiKey: "{{ key }}"
           name: www
           zone: "{{ test_zone }}"
@@ -140,7 +140,7 @@
 
       - name: test record delete with existing zone
         local_action:
-          module: nsone_record
+          module: ns1_record
           apiKey: "{{ key }}"
           name: www
           zone: "{{ test_zone }}"
@@ -154,7 +154,7 @@
 
       - name: clean up zone from record tests
         local_action:
-          module: nsone_zone
+          module: ns1_zone
           apiKey: "{{ key }}"
           name: "{{ test_zone }}"
           state: absent
@@ -165,7 +165,7 @@
 
       - name: test record delete without existing zone
         local_action:
-          module: nsone_record
+          module: ns1_record
           apiKey: "{{ key }}"
           name: www
           zone: "{{ test_zone }}"

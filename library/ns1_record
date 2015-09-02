@@ -18,7 +18,7 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
 DOCUMENTATION = """
-module: nsone_record
+module: ns1_record
 short_description: "Add, modify & delete nsone hosted DNS records."
 description:
  - This module is a light wrapper around the nsone api that allows for the
@@ -145,7 +145,7 @@ EXAMPLES = '''
 
       - name: record delete
         local_action:
-          module: nsone_record
+          module: ns1_record
           apiKey: "{{ key }}"
           name: www
           zone: "{{ test_zone }}"

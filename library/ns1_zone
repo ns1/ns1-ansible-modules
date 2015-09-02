@@ -18,7 +18,7 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
 DOCUMENTATION = """
-module: nsone_zone
+module: ns1_zone
 short_description: "Add, modify & delete nsone hosted zones."
 description:
  - This module is a light wrapper around the nsone api that allows for the
@@ -95,7 +95,7 @@ options:
 EXAMPLES = '''
   - name: create zone
     local_action:
-      module: nsone_zone
+      module: ns1_zone
       apiKey: "{{ key }}"
       name: "{{ test_zone }}"
       state: present
@@ -104,7 +104,7 @@ EXAMPLES = '''
 
   - name: delete zone
     local_action:
-      module: nsone_zone
+      module: ns1_zone
       apiKey: "{{ key }}"
       name: "{{ test_zone }}"
       state: absent

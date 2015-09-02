@@ -9,14 +9,14 @@ Project Overview
 Nsone is a first class anycast DNS provider with a highly mutable api. This module unlocks some of the functionality NSONE can offer for ansible. For more information about what is possible check out [nsone.com](nsone.com) and [api docs](https://nsone.net/api/).
 
 Completed Modules:
- - nsone_zone
- - nsone_record
+ - ns1_zone
+ - ns1_record
 
 Still Needed:
- - nsone_facts
- - nsone_data_source
- - nsone_data_feed
- - nsone_monitoring_job
+ - ns1_facts
+ - ns1_data_source
+ - ns1_data_feed
+ - ns1_monitoring_job
 
 Installation
 ============
