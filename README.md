@@ -1,7 +1,7 @@
-nsone-ansible-module
+ns1-ansible-modules
 ====================
 
-This is the temporary home for the nsone-ansible modules. Once additional resources are completed and reviewed we will have these merged into the community core modules so they can be distributed with mainline ansible.
+This is the temporary home for the NSONE ansible modules. Once additional resources are completed and reviewed we will have these merged into the community core modules so they can be distributed with mainline ansible.
 
 Project Overview
 ================
