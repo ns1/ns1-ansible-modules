@@ -1,12 +1,12 @@
 ns1-ansible-modules
 ====================
 
-This is the temporary home for the NSONE ansible modules. Once additional resources are completed and reviewed we will have these merged into the community core modules so they can be distributed with mainline ansible.
+This role is the home for all NS1 specific modules.
 
 Project Overview
 ================
 
-NSONE is an authoritative DNS platform providing data-driven global traffic routing and a fully featured REST API. This module unlocks some of the functionality NSONE can offer for ansible. For more information about what is possible check out [nsone.com](nsone.com) and [api docs](https://nsone.net/api/).
+NS1 is an authoritative DNS platform providing data-driven global traffic routing and a fully featured REST API. This module unlocks some of the functionality NSONE can offer for ansible. For more information about what is possible check out [ns1.com](ns1.com) and [api docs](https://ns1.com/api/).
 
 Completed Modules:
  - ns1_zone
@@ -21,16 +21,16 @@ Still Needed:
 Installation
 ============
 
-The easiest way to install these modules is to copy them into your ansible library directory. You will need the nsone python client version 0.9.2 or greater. This can be installed by running: `pip install nsone`. Additional information can be found here [nsone-python](https://github.com/nsone/nsone-python)
+Install this from ansible-galaxy. `ansible-galaxy install ns1.ns1-ansible-modules`. You will need the ns1 python client version 0.9.2 or greater. This can be installed by running: `pip install nsone`. Additional information can be found here [nsone-python](https://github.com/nsone/nsone-python)
 
 Testing
 =======
 
 This module is tested by using ansible directly. 
 
-	git clone git@github.com/nsone/nsone-ansible-module.git
-	cd nsone-ansible-module
-	ansible -i local, test.yml --extra-vars key=<your nsone api key> --extra-vars debug=yes --extra-vars test_zone=<a zone you have at nsone
+	git clone git@github.com/ns1/ns1-ansible-module.git
+	cd ns1-ansible-module
+	ansible -i local, test.yml --extra-vars key=<your ns1 api key> --extra-vars debug=yes --extra-vars test_zone=<a zone you have at ns1
 
 The debug flag is optional. You can use any test zone to get started, the only requirement is that it's not yet defined on the NSONE platform. That is, you do not need to make the zone authoritative through your registrar for the ansible module to work correctly.
 
@@ -39,7 +39,7 @@ The current version of the module has been tested with ansible 1.9.2 and python 
 Examples
 ========
 
-Check out test.yml which is all working ansible code. All of the resources try to model the [api](https://nsone.net/api/) objects as closely as possible. We will be adding the standard ansible documentation to the modules themselves shortly.
+Check out test.yml which is all working ansible code. All of the resources try to model the [api](https://ns1.com/api/) objects as closely as possible. We will be adding the standard ansible documentation to the modules themselves shortly.
 
 Contributing
 ============
