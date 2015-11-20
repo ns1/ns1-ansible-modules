@@ -32,7 +32,7 @@ This module is tested by using ansible directly.
 	cd ns1-ansible-module
 	ansible -i local, test.yml --extra-vars key=<your ns1 api key> --extra-vars debug=yes --extra-vars test_zone=<a zone you have at ns1>
 
-The debug flag is optional. You can use any test zone to get started, the only requirement is that it's not yet defined on the NSONE platform. That is, you do not need to make the zone authoritative through your registrar for the ansible module to work correctly.
+The debug flag is optional. You can use any test zone to get started, the only requirement is that it's not yet defined on the NS1 platform. That is, you do not need to make the zone authoritative through your registrar for the ansible module to work correctly.
 
 The current version of the module has been tested with ansible 1.9.2 and python 2.7.10.
 
