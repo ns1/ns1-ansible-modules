@@ -6,7 +6,7 @@ This role is the home for all NS1 specific modules.
 Project Overview
 ================
 
-NS1 is an authoritative DNS platform providing data-driven global traffic routing and a fully featured REST API. This module unlocks some of the functionality NSONE can offer for ansible. For more information about what is possible check out [ns1.com](ns1.com) and [api docs](https://ns1.com/api/).
+NS1 is an authoritative DNS platform providing data-driven global traffic routing and a fully featured REST API. This module unlocks some of the functionality NS1 can offer for ansible. For more information about what is possible check out [ns1.com](ns1.com) and [api docs](https://ns1.com/api/).
 
 Completed Modules:
  - ns1_zone
