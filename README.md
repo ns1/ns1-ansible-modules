@@ -28,7 +28,7 @@ Testing
 
 This module is tested by using ansible directly. 
 
-	git clone git@github.com/ns1/ns1-ansible-module.git
+	git clone https://github.com/ns1/ns1-ansible-modules.git
 	cd ns1-ansible-module
 	ansible -i local, test.yml --extra-vars key=<your ns1 api key> --extra-vars debug=yes --extra-vars test_zone=<a zone you have at ns1>
 
