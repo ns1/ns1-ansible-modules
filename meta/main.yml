@@ -1,0 +1,52 @@
+---
+galaxy_info:
+  author: Che Ruisi-Besares
+  description: This is a package of all the ns1 modules
+  company: ns1
+  license: MIT
+  min_ansible_version: 1.2
+  platforms:
+  - name: EL
+   versions:
+   - all
+  - name: GenericUNIX
+   versions:
+   - all
+  - name: Fedora
+   versions:
+   - all
+  - name: opensuse
+   versions:
+   - all
+  - name: Amazon
+   versions:
+   - all
+  - name: GenericBSD
+   versions:
+   - all
+  - name: FreeBSD
+   versions:
+   - all
+  - name: Ubuntu
+   versions:
+   - all
+  - name: SLES
+   versions:
+   - all
+  - name: GenericLinux
+   versions:
+   - all
+  - name: Debian
+   versions:
+   - all
+  categories:
+  - cloud
+  - clustering
+  - database
+  - development
+  - monitoring
+  - networking
+  - system
+  - web
+dependencies: []
+  
