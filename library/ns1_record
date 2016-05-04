@@ -123,7 +123,7 @@ options:
 EXAMPLES = '''
    - name: record creation
         local_action:
-          module: nsone record
+          module: ns1_record
           apiKey: "{{ key }}"
           name: www
           zone: "{{ test_zone }}"
