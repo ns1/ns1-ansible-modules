@@ -35,7 +35,7 @@ options:
         description:
           - create or destroy the zone, defaults to present. There is no
             difference between present and active or absent and deleted.
-          - Be aware that deleting a zone will remove all records. 
+          - Be aware that deleting a zone will remove all records.
         required: true
         choices: ['present', 'active', 'absent', 'deleted']
     apiKey:
@@ -86,8 +86,8 @@ options:
         default: None
     primary:
         description:
-          - To enable slaving of your zone by third party DNS servers, 
-            you must include a primary object. 
+          - To enable slaving of your zone by third party DNS servers,
+            you must include a primary object.
         required: false
         default: None
 """
@@ -99,7 +99,7 @@ EXAMPLES = '''
       apiKey: "{{ key }}"
       name: "{{ test_zone }}"
       state: present
-      refresh: 200            
+      refresh: 200
     register: return
 
   - name: delete zone
@@ -114,11 +114,11 @@ EXAMPLES = '''
 
 
 try:
-	from nsone import NSONE, Config
-	from nsone.rest.errors import ResourceException
-	HAS_NSONE = True
+    from nsone import NSONE, Config
+    from nsone.rest.errors import ResourceException
+    HAS_NSONE = True
 except ImportError:
-	HAS_NSONE = False
+    HAS_NSONE = False
 
 
 CREATE_STATES = ['present', 'active']
@@ -127,142 +127,144 @@ DELETE_STATES = ['absent', 'deleted']
 STATES = CREATE_STATES + DELETE_STATES
 
 ZONE_KEYS = [
-	'refresh',
-	'retry',
-	'expiry',
-	'nx_ttl',
-	'link',
-	'networks',
-	'secondary',
-	'secondary_enabled',
-	'primary_ip',
-	'primary_port',
-	'primary',
-	'primary_enabled',
-	'secondaries'
+    'refresh',
+    'retry',
+    'expiry',
+    'nx_ttl',
+    'link',
+    'networks',
+    'secondary',
+    'secondary_enabled',
+    'primary_ip',
+    'primary_port',
+    'primary',
+    'primary_enabled',
+    'secondaries'
 ]
 
+
 def errback_generator(module):
-	def errback(args):
-		module.fail_json(
-			msg="%s - %s" % (args[0], args[1])
-		)
-	return errback
+    def errback(args):
+        module.fail_json(
+            msg="%s - %s" % (args[0], args[1])
+        )
+    return errback
+
 
 def api_params(module):
-	toReturn = {}
-	for i in ZONE_KEYS:
-		if module.params.get(i) is not None:
-			toReturn[i] = module.params.get(i)
-	return toReturn
+    toReturn = {}
+    for i in ZONE_KEYS:
+        if module.params.get(i) is not None:
+            toReturn[i] = module.params.get(i)
+    return toReturn
+
 
 def get_zone(nsone, module):
-	to_return = None
-	try:
-		to_return = nsone.loadZone(module.params.get('name'))
-	except ResourceException as re:
-		if re.response.code != 404:
-			module.fail_json(
-				msg="error code %s - %s " % ( re.response.code, re.message )
-				)
-			to_return = None
-	return to_return
+    to_return = None
+    try:
+        to_return = nsone.loadZone(module.params.get('name'))
+    except ResourceException as re:
+        if re.response.code != 404:
+            module.fail_json(
+                msg="error code %s - %s " % (re.response.code, re.message)
+            )
+            to_return = None
+    return to_return
+
 
 def update(zone, module):
-	changed = False
-	args = {}
-	for i in ZONE_KEYS:
-		if ( 
-			module.params.get(i) and 
-				( 
-					not zone.data or
-					i not in zone.data or
-					module.params.get(i) != zone.data[i]
-				)
-			):
-			changed = True
-			args[i] = module.params.get(i)
+    changed = False
+    args = {}
+    for i in ZONE_KEYS:
+        if (
+            module.params.get(i) and
+                (
+                    not zone.data or
+                    i not in zone.data or
+                    module.params.get(i) != zone.data[i]
+                )
+            ):
+            changed = True
+            args[i] = module.params.get(i)
 
-	if module.check_mode:
-		# check mode short circut before update
-		module.exit_json(changed=changed)
+    if module.check_mode:
+        # check mode short circut before update
+        module.exit_json(changed=changed)
 
-	if changed:
-		# update only if changed
-		zone = zone.update(errback=errback_generator(module), **args)
+    if changed:
+        # update only if changed
+        zone = zone.update(errback=errback_generator(module), **args)
 
-	module.exit_json(changed=changed, id=zone['id'], data=zone.data)
+    module.exit_json(changed=changed, id=zone['id'], data=zone.data)
 
 
 def main():
-	module = AnsibleModule(
-		argument_spec 		= dict(
-			apiKey    		= dict(required=True, no_log=True),
-			name			= dict(required=True),
-			refresh			= dict(required=False, type='int', default=None),
-			retry			= dict(required=False, type='int', default=None),
-			expiry			= dict(required=False, type='int', default=None),
-			nx_ttl			= dict(required=False, type='int', default=None),
-			link			= dict(required=False, default=None),
-			networks		= dict(required=False, default=None),
-			secondary		= dict(required=False, default=None),
-			primary 		= dict(required=False, default=None),
-			state			= dict(
-								required=False, 
-								default='present', 
-								choices=STATES
-								),
-			),
-		supports_check_mode=True,
-		mutually_exclusive=[
-			[ 'link', 'networks' ],
-			[ 'link', 'retry' ],
-			[ 'link', 'expiry' ],
-			[ 'link', 'nx_ttl' ],			
-			[ 'link', 'secondary' ],			
-			[ 'link', 'primary' ],			
-			[ 'link', 'refresh' ]		
-		]
-	)
+    module = AnsibleModule(
+        argument_spec       = dict(
+            apiKey          = dict(required=True, no_log=True),
+            name            = dict(required=True),
+            refresh         = dict(required=False, type='int', default=None),
+            retry           = dict(required=False, type='int', default=None),
+            expiry          = dict(required=False, type='int', default=None),
+            nx_ttl          = dict(required=False, type='int', default=None),
+            link            = dict(required=False, default=None),
+            networks        = dict(required=False, default=None),
+            secondary       = dict(required=False, default=None),
+            primary         = dict(required=False, default=None),
+            state           = dict(
+                                required=False,
+                                default='present',
+                                choices=STATES
+                                ),
+            ),
+        supports_check_mode=True,
+        mutually_exclusive=[
+            [ 'link', 'networks' ],
+            [ 'link', 'retry' ],
+            [ 'link', 'expiry' ],
+            [ 'link', 'nx_ttl' ],
+            [ 'link', 'secondary' ],
+            [ 'link', 'primary' ],
+            [ 'link', 'refresh' ]
+        ]
+    )
 
-	if not HAS_NSONE:
-		module.fail_json(msg='the nsone client lib is required for this module')
+    if not HAS_NSONE:
+        module.fail_json(msg='the nsone client lib is required for this module')
 
-	config = Config()
-	config.createFromAPIKey(module.params.get('apiKey'))
-	config['transport'] = 'basic'
-	nsone = NSONE(config=config)
-	
-	zone = get_zone(nsone, module)
+    config = Config()
+    config.createFromAPIKey(module.params.get('apiKey'))
+    config['transport'] = 'basic'
+    nsone = NSONE(config=config)
 
-	# zone found
-	if zone:
-		if module.params.get('state') in DELETE_STATES:
-			if module.check_mode:
-				# short circut in check mode
-				module.exit_json(changed=True)
+    zone = get_zone(nsone, module)
 
-			# we want it deleted
-			zone.delete(errback=errback_generator(module))
-			module.exit_json(changed=True)
-		else:
-			# we want to update it if changed
-			update(zone, module)
-	else:
-		if module.params.get('state') in DELETE_STATES:
-			module.exit_json(changed=False)
-		else:
-			if module.check_mode:
-				# short circut in check mode
-				module.exit_json(changed=True)
-			
-			zone = nsone.createZone(
-				module.params.get('name'), 
-				errback=errback_generator(module),
-				**api_params(module)
-			)
-			module.exit_json(changed=True, id=zone['id'], data=zone.data)
-			
+    # zone found
+    if zone:
+        if module.params.get('state') in DELETE_STATES:
+            if module.check_mode:
+                # short circut in check mode
+                module.exit_json(changed=True)
+
+            # we want it deleted
+            zone.delete(errback=errback_generator(module))
+            module.exit_json(changed=True)
+        else:
+            # we want to update it if changed
+            update(zone, module)
+    else:
+        if module.params.get('state') in DELETE_STATES:
+            module.exit_json(changed=False)
+        else:
+            if module.check_mode:
+                # short circut in check mode
+                module.exit_json(changed=True)
+            zone = nsone.createZone(
+                module.params.get('name'),
+                errback=errback_generator(module),
+                **api_params(module)
+            )
+            module.exit_json(changed=True, id=zone['id'], data=zone.data)
 
 from ansible.module_utils.basic import *
 

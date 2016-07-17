@@ -14,7 +14,7 @@
           apiKey: "{{ key }}"
           name: "{{ test_zone }}"
           state: present
-          refresh: 200            
+          refresh: 200
         register: return
 
       - debug: var=return
@@ -26,7 +26,7 @@
           apiKey: "{{ key }}"
           name: "{{ test_zone }}"
           state: present
-          refresh: 300            
+          refresh: 300
         register: return
 
       - debug: var=return
@@ -38,7 +38,7 @@
           apiKey: "{{ key }}"
           name: "{{ test_zone }}"
           state: present
-          refresh: 300            
+          refresh: 300
         register: return
 
       - debug: var=return

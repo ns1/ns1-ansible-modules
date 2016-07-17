@@ -34,7 +34,7 @@ options:
     state:
         description:
           - create or destroy the record, defaults to present. There is no
-            difference between present and active or absent and deleted. 
+            difference between present and active or absent and deleted.
         required: true
         choices: ['present', 'active', 'absent', 'deleted']
     apiKey:
@@ -52,7 +52,7 @@ options:
     answers:
         description:
           - This is the nsone answer object for this record. This can take
-            Many forms depending on record type and desired effect. See 
+            Many forms depending on record type and desired effect. See
             https://nsone.net/api/ for more details. As a note you can pass
             an array or hash object via yml and it will passed directly to the
             api.
@@ -72,20 +72,20 @@ options:
         required: True
         choices:
           - A
-		  - AAAA 
-		  - ALIAS
-		  - AFSDB
-		  - CNAME
-		  - DNAME
-		  - HINFO
-		  - MX
-		  - NAPT
-		  - NS
-		  - PTR
-		  - RP
-		  - SPF
-		  - SRV
-		  - TXT
+          - AAAA
+          - ALIAS
+          - AFSDB
+          - CNAME
+          - DNAME
+          - HINFO
+          - MX
+          - NAPT
+          - NS
+          - PTR
+          - RP
+          - SPF
+          - SRV
+          - TXT
     use_client_subnet:
         description:
           - direct pass through of the use_client_subnet record flag.
@@ -157,11 +157,11 @@ EXAMPLES = '''
 
 
 try:
-	from nsone import NSONE, Config
-	from nsone.rest.errors import ResourceException
-	HAS_NSONE = True
+    from nsone import NSONE, Config
+    from nsone.rest.errors import ResourceException
+    HAS_NSONE = True
 except ImportError:
-	HAS_NSONE = False
+    HAS_NSONE = False
 
 CREATE_STATES = ['present', 'active']
 DELETE_STATES = ['absent', 'deleted']
@@ -169,220 +169,219 @@ DELETE_STATES = ['absent', 'deleted']
 STATES = CREATE_STATES + DELETE_STATES
 
 RECORD_KEYS = [
-	'use_client_subnet',
-	'answers',
-	'meta',
-	'link',
-	'filters',
-	'ttl',
-	'regions'
+    'use_client_subnet',
+    'answers',
+    'meta',
+    'link',
+    'filters',
+    'ttl',
+    'regions'
 ]
 
 RECORD_KEYS_WIHTOUT_ANSWERS = [
-	'use_client_subnet',
-	'meta',
-	'link',
-	'filters',
-	'ttl',
-	'regions'
+    'use_client_subnet',
+    'meta',
+    'link',
+    'filters',
+    'ttl',
+    'regions'
 ]
 
 RECORD_KEYS = RECORD_KEYS_WIHTOUT_ANSWERS + ['answers']
 
 TYPES = [
-	'A',
-	'AAAA', 
-	'ALIAS',
-	'AFSDB', 
-	'CNAME', 
-	'DNAME', 
-	'HINFO', 
-	'MX', 
-	'NAPTR',
-	'NS', 
-	'PTR', 
-	'RP',
-	'SPF',
-	'SRV',
-	'TXT'
+    'A',
+    'AAAA',
+    'ALIAS',
+    'AFSDB',
+    'CNAME',
+    'DNAME',
+    'HINFO',
+    'MX',
+    'NAPTR',
+    'NS',
+    'PTR',
+    'RP',
+    'SPF',
+    'SRV',
+    'TXT'
 ]
 
 def errback_generator(module):
-	def errback(args):
-		module.fail_json(
-			msg="%s - %s" % (args[0], args[1])
-		)
-	return errback
+    def errback(args):
+        module.fail_json(
+            msg="%s - %s" % (args[0], args[1])
+        )
+    return errback
 
 def api_params(module):
-	toReturn = {}
-	for i in RECORD_KEYS_WIHTOUT_ANSWERS:
-		if module.params.get(i) is not None:
-			toReturn[i] = module.params.get(i)
-	return toReturn
+    toReturn = {}
+    for i in RECORD_KEYS_WIHTOUT_ANSWERS:
+        if module.params.get(i) is not None:
+            toReturn[i] = module.params.get(i)
+    return toReturn
 
 def clean(d):
-	if isinstance(d, dict):
-		for key,val in d.items():
-			if isinstance(val, dict) or isinstance(val, list):
-				val = clean(val)						
-			if key == 'id':
-				del d[key]
-	if isinstance(d, list):
-		for i in d:
-			if isinstance(i, dict) or isinstance(i, list):
-				i = clean(i)
-	return d
+    if isinstance(d, dict):
+        for key,val in d.items():
+            if isinstance(val, dict) or isinstance(val, list):
+                val = clean(val)
+            if key == 'id':
+                del d[key]
+    if isinstance(d, list):
+        for i in d:
+            if isinstance(i, dict) or isinstance(i, list):
+                i = clean(i)
+    return d
 
 
 def get_zone(nsone, module):
-	to_return = None
-	try:
-		to_return = nsone.loadZone(module.params.get('zone'))
-	except ResourceException as re:
-		if re.response.code == 404:
-			if ( module.params.get('ignore_missing_zone') and
-				module.params.get('state') in DELETE_STATES):
-				# zone not found but we are in the delete state 
-				# and the user doesn't care that the zone doesn't exist
-				# nothing to do and no change
-				module.exit_json(changed=False)
-		else:
-			# generic error or user cares about missing zone
-			module.fail_json(
-				msg="error code %s - %s " % ( re.response.code, re.message )
-			)
+    to_return = None
+    try:
+        to_return = nsone.loadZone(module.params.get('zone'))
+    except ResourceException as re:
+        if re.response.code == 404:
+            if ( module.params.get('ignore_missing_zone') and
+                module.params.get('state') in DELETE_STATES):
+                # zone not found but we are in the delete state
+                # and the user doesn't care that the zone doesn't exist
+                # nothing to do and no change
+                module.exit_json(changed=False)
+        else:
+            # generic error or user cares about missing zone
+            module.fail_json(
+                msg="error code %s - %s " % ( re.response.code, re.message )
+            )
 
-	return to_return
+    return to_return
 
 def get_record(zone, module):
-	to_return = None
-	try:
-		to_return = zone.loadRecord(
-			module.params.get('name'),
-			module.params.get('type').upper()
-		)
-	except ResourceException as re:
-		if re.response.code != 404:
-			module.fail_json(
-				msg="error code %s - %s " % ( re.response.code, re.message )
-			)
-			to_return = None
-	return to_return
+    to_return = None
+    try:
+        to_return = zone.loadRecord(
+            module.params.get('name'),
+            module.params.get('type').upper()
+        )
+    except ResourceException as re:
+        if re.response.code != 404:
+            module.fail_json(
+                msg="error code %s - %s " % ( re.response.code, re.message )
+            )
+            to_return = None
+    return to_return
 
 def update(zone, record, module):
-	cleaned_data = clean(record.data)
-	changed = False
-	args = {}
-	for i in RECORD_KEYS:
-		if ( 
-			module.params.get(i) and 
-				( 
-					not cleaned_data or
-					i not in cleaned_data or
-					module.params.get(i) != cleaned_data[i]
-				)
-			):
-			changed = True
-			args[i] = module.params.get(i)
+    cleaned_data = clean(record.data)
+    changed = False
+    args = {}
+    for i in RECORD_KEYS:
+        if (
+            module.params.get(i) and
+                (
+                    not cleaned_data or
+                    i not in cleaned_data or
+                    module.params.get(i) != cleaned_data[i]
+                )
+            ):
+            changed = True
+            args[i] = module.params.get(i)
 
-	if module.check_mode:
-		# check mode short circuit before update
-		module.exit_json(changed=changed)
+    if module.check_mode:
+        # check mode short circuit before update
+        module.exit_json(changed=changed)
 
-	if changed:
-		# update only if changed
-		record = record.update(errback=errback_generator(module),**args)
+    if changed:
+        # update only if changed
+        record = record.update(errback=errback_generator(module),**args)
 
-	module.exit_json(changed=changed, id=record['id'], data=record.data)
+    module.exit_json(changed=changed, id=record['id'], data=record.data)
 
 
 def main():
-	module = AnsibleModule(
-		argument_spec 			= dict(
-			apiKey    			= dict(required=True, no_log=True),
-			name				= dict(required=True),
-			zone				= dict(required=True),
-			answers				= dict(required=True),
-			ignore_missing_zone = dict(required=False, default=False),
-			type 				= dict(
-									required=True, 
-									choices=(
-										map(lambda x:x.lower(),TYPES) + TYPES)
-									),
-			use_client_subnet   = dict(
-									required=False,
-									default=None,
-									type='bool'
-								),
-			meta 				= dict(required=False, default=None),
-			link	 			= dict(required=False, default=None),
-			filters 			= dict(required=False, default=None),
-			ttl		 			= dict(
-									required=False,
-									type='int',
-									default=3600
-								),
-			regions 			= dict(required=False, default=None),
-			state				= dict(
-									required=False, 
-									default='present',
-									choices=STATES
-								),
-			),
-		supports_check_mode=True
-	)
+    module = AnsibleModule(
+        argument_spec           = dict(
+            apiKey              = dict(required=True, no_log=True),
+            name                = dict(required=True),
+            zone                = dict(required=True),
+            answers             = dict(required=True, type='list'),
+            ignore_missing_zone = dict(required=False, default=False),
+            type                = dict(
+                                    required=True,
+                                    choices=(
+                                        map(lambda x:x.lower(),TYPES) + TYPES)
+                                    ),
+            use_client_subnet   = dict(
+                                    required=False,
+                                    default=None,
+                                    type='bool'
+                                ),
+            meta                = dict(required=False, default=None),
+            link                = dict(required=False, default=None),
+            filters             = dict(required=False, type='list', default=None),
+            ttl                 = dict(
+                                    required=False,
+                                    type='int',
+                                    default=3600
+                                ),
+            regions             = dict(required=False, default=None),
+            state               = dict(
+                                    required=False,
+                                    default='present',
+                                    choices=STATES
+                                ),
+            ),
+        supports_check_mode=True
+    )
 
-	if not HAS_NSONE:
-		module.fail_json(msg='the nsone client lib is required for this module')
-	
-	config = Config()
-	config.createFromAPIKey(module.params.get('apiKey'))
-	config['transport'] = 'basic'
-	nsone = NSONE(config=config)
+    if not HAS_NSONE:
+        module.fail_json(msg='the nsone client lib is required for this module')
 
-	zone = get_zone(nsone, module)
-	
-	record = get_record(zone, module)
+    config = Config()
+    config.createFromAPIKey(module.params.get('apiKey'))
+    config['transport'] = 'basic'
+    nsone = NSONE(config=config)
 
-	# record found
-	if record:
-		if module.params.get('state') in DELETE_STATES:
-			if module.check_mode:
-				# short circut in check mode
-				module.exit_json(changed=True)
+    zone = get_zone(nsone, module)
 
-			# we want it deleted
-			record.delete(errback=errback_generator(module))
-			module.exit_json(changed=True)
-		else:
-			update(zone, record, module)
-	else:
-		if module.params.get('state') in DELETE_STATES:
-			module.exit_json(changed=False)
-		else:
-			if module.check_mode:
-				# short circuit in check mode
-				module.exit_json(changed=True)
-			
+    record = get_record(zone, module)
 
-			methodToCall = getattr(
-				zone,
-				'add_%s' % (module.params.get('type').upper())
-			)
+    # record found
+    if record:
+        if module.params.get('state') in DELETE_STATES:
+            if module.check_mode:
+                # short circut in check mode
+                module.exit_json(changed=True)
 
-			record = methodToCall(
-				module.params.get('name'),
-				module.params.get('answers'),
-				errback=errback_generator(module),
-				**api_params(module)
-			)
-			module.exit_json(
-				changed=True,
-				id=record['id'],
-				data=record.data
-			)
-			
+            # we want it deleted
+            record.delete(errback=errback_generator(module))
+            module.exit_json(changed=True)
+        else:
+            update(zone, record, module)
+    else:
+        if module.params.get('state') in DELETE_STATES:
+            module.exit_json(changed=False)
+        else:
+            if module.check_mode:
+                # short circuit in check mode
+                module.exit_json(changed=True)
+
+            methodToCall = getattr(
+                zone,
+                'add_%s' % (module.params.get('type').upper())
+            )
+
+            record = methodToCall(
+                module.params.get('name'),
+                module.params.get('answers'),
+                errback=errback_generator(module),
+                **api_params(module)
+            )
+            module.exit_json(
+                changed=True,
+                id=record['id'],
+                data=record.data
+            )
+
 
 from ansible.module_utils.basic import *
 
