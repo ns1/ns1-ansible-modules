@@ -178,7 +178,7 @@ RECORD_KEYS = [
     'regions'
 ]
 
-RECORD_KEYS_WIHTOUT_ANSWERS = [
+RECORD_KEYS_WITHOUT_ANSWERS = [
     'use_client_subnet',
     'meta',
     'link',
@@ -187,7 +187,7 @@ RECORD_KEYS_WIHTOUT_ANSWERS = [
     'regions'
 ]
 
-RECORD_KEYS = RECORD_KEYS_WIHTOUT_ANSWERS + ['answers']
+RECORD_KEYS = RECORD_KEYS_WITHOUT_ANSWERS + ['answers']
 
 TYPES = [
     'A',
@@ -216,7 +216,7 @@ def errback_generator(module):
 
 def api_params(module):
     toReturn = {}
-    for i in RECORD_KEYS_WIHTOUT_ANSWERS:
+    for i in RECORD_KEYS_WITHOUT_ANSWERS:
         if module.params.get(i) is not None:
             toReturn[i] = module.params.get(i)
     return toReturn
@@ -308,7 +308,7 @@ def main():
             type                = dict(
                                     required=True,
                                     choices=(
-                                        map(lambda x:x.lower(),TYPES) + TYPES)
+                                        list(map(lambda x:x.lower(),TYPES)) + TYPES)
                                     ),
             use_client_subnet   = dict(
                                     required=False,
