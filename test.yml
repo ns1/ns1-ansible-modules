@@ -138,6 +138,26 @@
       - debug: var=return
         when: debug is defined
 
+      - name: remove filters record test
+        local_action:
+          module: ns1_record
+          apiKey: "{{ key }}"
+          name: www
+          zone: "{{ test_zone }}"
+          state: present
+          type: A
+          answers:
+            - answer:
+                - 192.168.1.0
+              meta:
+                up: True
+          filters: []
+          ttl: 3600
+        register: return
+
+      - debug: var=return
+        when: debug is defined
+
       - name: test record delete with existing zone
         local_action:
           module: ns1_record

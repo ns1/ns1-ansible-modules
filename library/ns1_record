@@ -276,7 +276,7 @@ def update(zone, record, module):
     args = {}
     for i in RECORD_KEYS:
         if (
-            module.params.get(i) and
+            module.params.get(i) != None and
                 (
                     not cleaned_data or
                     i not in cleaned_data or
