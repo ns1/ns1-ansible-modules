@@ -223,15 +223,15 @@ def api_params(module):
 
 def clean(d):
     if isinstance(d, dict):
+        if 'id' in d:
+            del d['id']
         for key,val in d.items():
             if isinstance(val, dict) or isinstance(val, list):
-                val = clean(val)
-            if key == 'id':
-                del d[key]
+                clean(val)
     if isinstance(d, list):
         for i in d:
             if isinstance(i, dict) or isinstance(i, list):
-                i = clean(i)
+                clean(i)
     return d
 
 
