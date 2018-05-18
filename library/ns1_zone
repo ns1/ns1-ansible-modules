@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# (c) 2015, Che Ruisi-Besares <cruisibesares@nsone.net>
+# (c) 2015, Che Ruisi-Besares <cruisibesares@ns1.com>
 #
 # This file is part of Ansible
 #
@@ -19,12 +19,12 @@
 
 DOCUMENTATION = """
 module: ns1_zone
-short_description: "Add, modify & delete nsone hosted zones."
+short_description: "Add, modify & delete ns1 hosted zones."
 description:
- - This module is a light wrapper around the nsone api that allows for the
-   creation, modification, and deletion of nsone zone objects.
+ - This module is a light wrapper around the ns1 api that allows for the
+   creation, modification, and deletion of ns1 zone objects.
  - Additional record attributes can be passed to the module as documented below.
- - "See http://nsone.net/api/ for more details."
+ - "See http://ns1.com/api/ for more details."
 requirements:
   - "python >= 2.6"
   - nsone >= 0.9.2
@@ -40,7 +40,7 @@ options:
         choices: ['present', 'active', 'absent', 'deleted']
     apiKey:
         description:
-          - Unique client api key that can be created via the nsone portal.
+          - Unique client api key that can be created via the ns1 portal.
         required: true
     name:
         description:
@@ -114,11 +114,11 @@ EXAMPLES = '''
 
 
 try:
-    from nsone import NSONE, Config
-    from nsone.rest.errors import ResourceException
-    HAS_NSONE = True
+    from ns1 import NS1, Config
+    from ns1.rest.errors import ResourceException
+    HAS_NS1 = True
 except ImportError:
-    HAS_NSONE = False
+    HAS_NS1 = False
 
 
 CREATE_STATES = ['present', 'active']
@@ -159,10 +159,10 @@ def api_params(module):
     return toReturn
 
 
-def get_zone(nsone, module):
+def get_zone(ns1, module):
     to_return = None
     try:
-        to_return = nsone.loadZone(module.params.get('name'))
+        to_return = ns1.loadZone(module.params.get('name'))
     except ResourceException as re:
         if re.response.code != 404:
             module.fail_json(
@@ -229,15 +229,15 @@ def main():
         ]
     )
 
-    if not HAS_NSONE:
-        module.fail_json(msg='the nsone client lib is required for this module')
+    if not HAS_NS1:
+        module.fail_json(msg='the ns1 client lib is required for this module')
 
     config = Config()
     config.createFromAPIKey(module.params.get('apiKey'))
     config['transport'] = 'basic'
-    nsone = NSONE(config=config)
+    ns1 = NS1(config=config)
 
-    zone = get_zone(nsone, module)
+    zone = get_zone(ns1, module)
 
     # zone found
     if zone:
@@ -259,7 +259,7 @@ def main():
             if module.check_mode:
                 # short circut in check mode
                 module.exit_json(changed=True)
-            zone = nsone.createZone(
+            zone = ns1.createZone(
                 module.params.get('name'),
                 errback=errback_generator(module),
                 **api_params(module)
