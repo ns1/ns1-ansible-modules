@@ -82,6 +82,7 @@ options:
     secondary:
         description:
           - To create a  secondary zone, you must include a secondary object.
+        type: dict
         required: false
         default: None
     primary:
@@ -209,7 +210,7 @@ def main():
             nx_ttl          = dict(required=False, type='int', default=None),
             link            = dict(required=False, default=None),
             networks        = dict(required=False, default=None),
-            secondary       = dict(required=False, default=None),
+            secondary       = dict(required=False, type='dict', default=None),
             primary         = dict(required=False, default=None),
             state           = dict(
                                 required=False,
