@@ -223,7 +223,7 @@ def api_params(module):
 
 def clean(d):
     if isinstance(d, dict):
-        for key,val in d.items():
+        for key,val in list(d.items()):
             if isinstance(val, dict) or isinstance(val, list):
                 val = clean(val)
             if key == 'id':
