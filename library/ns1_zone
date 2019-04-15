@@ -66,6 +66,11 @@ options:
           - SOA zone value.
         required: false
         default: None
+    dnssec:
+        description:
+          - enable dnssec for this zone
+        required: false
+        default: None
     link:
         description:
           - The domain this zone should be linked to. If you specify link only
@@ -140,7 +145,8 @@ ZONE_KEYS = [
     'primary_port',
     'primary',
     'primary_enabled',
-    'secondaries'
+    'secondaries',
+    'dnssec'
 ]
 
 
@@ -212,6 +218,7 @@ def main():
             networks        = dict(required=False, default=None),
             secondary       = dict(required=False, type='dict', default=None),
             primary         = dict(required=False, default=None),
+            dnssec          = dict(required=False, default=None),
             state           = dict(
                                 required=False,
                                 default='present',
