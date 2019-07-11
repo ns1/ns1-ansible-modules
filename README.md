@@ -21,7 +21,7 @@ Still Needed:
 Installation
 ============
 
-Install this from ansible-galaxy. `ansible-galaxy install cruisibesares.ns1`. You will need the ns1 python client version 0.9.19 or greater. This can be installed by running: `pip install ns1`. Additional information can be found here [ns1-python](https://github.com/ns1/ns1-python)
+Install this from ansible-galaxy. `ansible-galaxy install cruisibesares.ns1`. You will need the ns1 python client version 0.9.19 or greater. This can be installed by running: `pip install ns1-python`. Additional information can be found here [ns1-python](https://github.com/ns1/ns1-python)
 
 Testing
 =======
