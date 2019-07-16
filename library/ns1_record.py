@@ -4,14 +4,6 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
-from ansible.module_utils.basic import AnsibleModule
-
-try: 
-    from ansible.module_utils.basic import missing_required_lib 
-except Exception: 
-    def missing_required_lib(msg, reason=None, url=None):
-        return msg
-
 
 __metaclass__ = type
 
@@ -141,19 +133,9 @@ options:
     description:
       - The regions object for the record set.
     required: false
-  apiKey:
-    description:
-      - Unique client api key that can be created via the NS1 portal.
-    required: true
 
-requirements:
-  - python >= 2.7
-  - ns1 >= 0.9.19
-
-seealso:
-  - name: Documentation for NS1 API
-    description: Complete reference for the NS1 API.
-    link: https://ns1.com/api/
+extends_documentation_fragment:
+  - ns1
 
 author:
   - 'Matthew Burtless (@mburtless)'
@@ -221,44 +203,14 @@ RETURN = '''
 
 import copy
 
-HAS_NS1 = True
+from ansible.module_utils.ns1 import NS1ModuleBase, HAS_NS1
 
 try:
     from ns1 import NS1, Config
     from ns1.rest.errors import ResourceException
 except ImportError:
-    HAS_NS1 = False
-
-
-NS1_COMMON_ARGS = dict(apiKey=dict(required=True, no_log=True))
-
-
-class NS1ModuleBase(object):
-    def __init__(self, derived_arg_spec, supports_check_mode=False):
-        merged_arg_spec = dict()
-        merged_arg_spec.update(NS1_COMMON_ARGS)
-        if derived_arg_spec:
-            merged_arg_spec.update(derived_arg_spec)
-
-        self.module = AnsibleModule(
-            argument_spec=merged_arg_spec, supports_check_mode=supports_check_mode
-        )
-
-        if not HAS_NS1:
-            self.module.fail_json(msg=missing_required_lib("ns1-python"))
-        self._build_ns1()
-
-    def _build_ns1(self):
-        self.config = Config()
-        self.config.createFromAPIKey(self.module.params["apiKey"])
-        self.config['transport'] = 'basic'
-        self.ns1 = NS1(config=self.config)
-
-    def errback_generator(self):
-        def errback(args):
-            self.module.fail_json(msg="%s - %s" % (args[0], args[1]))
-
-        return errback
+    # This is handled in NS1 module_utils
+    pass
 
 RECORD_KEYS_MAP = dict(
     use_client_subnet=dict(appendable=False),
