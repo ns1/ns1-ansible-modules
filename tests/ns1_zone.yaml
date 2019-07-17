@@ -1,0 +1,86 @@
+---
+  - hosts: localhost
+    vars:
+      test_zone: sometestzone19.com
+
+    tasks:
+      - name: setup
+        local_action:
+          module: ns1_zone
+          apiKey: "{{ ns1_token }}"
+          name: "{{ test_zone }}"
+          state: absent
+        register: zone_setup
+
+      - name: Verify setup
+        assert:
+          that:
+            - zone_setup is success
+      
+      - name: Test zone creation
+        local_action:
+          module: ns1_zone
+          apiKey: "{{ ns1_token }}"
+          name: "{{ test_zone }}"
+          refresh: 200
+          state: present
+        register: zone_create
+
+      - name: Verify zone creation
+        assert:
+          that:
+            - zone_create is changed
+            - zone_create.data.zone == "{{ test_zone }}"
+            - zone_create.data.refresh == 200
+
+      - name: Test zone update
+        local_action:
+          module: ns1_zone
+          apiKey: "{{ ns1_token }}"
+          name: "{{ test_zone }}"
+          refresh: 400
+          ttl: 400
+          state: present
+        register: zone_update
+
+      - name: Verify zone update
+        assert:
+          that:
+            - zone_update is changed
+            - zone_update.data.refresh == 400
+            - zone_update.data.ttl == 400
+
+      - name: Test linked zone creation
+        local_action:
+          module: ns1_zone
+          apiKey: "{{ ns1_token }}"
+          name: "linked-{{ test_zone }}"
+          link: "{{ test_zone }}"
+          state: present
+        register: linked_zone
+
+      - name: Verify linked zone creation
+        assert:
+          that:
+            - linked_zone is changed
+            - linked_zone.data.link == "{{ test_zone }}"
+ 
+      - name: Delete linked zone
+        local_action:
+          module: ns1_zone
+          apiKey: "{{ ns1_token }}"
+          name: "linked-{{ test_zone }}"
+          state: absent
+      
+      - name: Test zone deletion
+        local_action:
+          module: ns1_zone
+          apiKey: "{{ ns1_token }}"
+          name: "{{ test_zone }}"
+          state: absent
+        register: zone_delete
+
+      - name: Verify zone deletion
+        assert:
+          that:
+            - zone_delete is changed
