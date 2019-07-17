@@ -29,14 +29,17 @@ NS1_COMMON_ARGS = dict(apiKey=dict(required=True, no_log=True))
 
 
 class NS1ModuleBase(object):
-    def __init__(self, derived_arg_spec, supports_check_mode=False):
+    def __init__(self, derived_arg_spec, supports_check_mode=False,
+                 mutually_exclusive=None):
         merged_arg_spec = dict()
         merged_arg_spec.update(NS1_COMMON_ARGS)
         if derived_arg_spec:
             merged_arg_spec.update(derived_arg_spec)
 
         self.module = AnsibleModule(
-            argument_spec=merged_arg_spec, supports_check_mode=supports_check_mode
+            argument_spec=merged_arg_spec,
+            supports_check_mode=supports_check_mode,
+            mutually_exclusive=mutually_exclusive
         )
 
         if not HAS_NS1:
