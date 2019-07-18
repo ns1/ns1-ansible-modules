@@ -63,6 +63,21 @@
             - zone_enable_dnssec is changed
             - zone_enable_dnssec.data.dnssec == True
 
+      - name: Test disabling dnssec
+        local_action:
+          module: ns1_zone
+          apiKey: "{{ ns1_token }}"
+          name: "{{ test_zone }}"
+          dnssec: False
+          state: present
+        register: zone_disable_dnssec
+
+      - name: Verify dnssec disabled
+        assert:
+          that:
+            - zone_disable_dnssec is changed
+            - zone_disable_dnssec.data.dnssec == False
+
       - name: Test linked zone creation
         local_action:
           module: ns1_zone
