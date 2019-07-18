@@ -21,7 +21,7 @@ Still Needed:
 Installation
 ============
 
-Install this from ansible-galaxy. `ansible-galaxy install ns1.ns1`. You will need the ns1 python client version 0.9.19 or greater. This can be installed by running: `pip install nsone`. Additional information can be found here [ns1-python](https://github.com/ns1/ns1-python)
+Install this from ansible-galaxy. `ansible-galaxy install ns1.ns1`. You will need the ns1 python client version 0.9.19 or greater. This can be installed by running: `pip install ns1-python`. Additional information can be found here [ns1-python](https://github.com/ns1/ns1-python)
 
 Testing
 =======
@@ -31,10 +31,10 @@ This module is tested by using ansible directly.
 ```
 	git clone https://github.com/ns1/ns1-ansible-modules.git
 	cd ns1-ansible-module
-	ansible-playbook -i local, tests/<name of module to test>.yaml --extra-vars ns1_token=<your NS1 API key> --extra-vars debug=yes --extra-vars test_zone=<a zone you have at ns1>
+	ansible-playbook -i local, tests/<name of module to test>.yaml --extra-vars ns1_token=<your NS1 API key> --extra-vars test_zone=<a zone you have at ns1>
 ```
 
-The debug flag is optional. You can use any test zone to get started, the only requirement is that it's not yet defined on the NS1 platform. That is, you do not need to make the zone authoritative through your registrar for the ansible module to work correctly.
+You can use any test zone to get started, the only requirement is that it's not yet defined on the NS1 platform. That is, you do not need to make the zone authoritative through your registrar for the ansible module to work correctly.
 
 The current version of the module has been tested with Ansible 2.8.2 and python 3.7.2.
 
