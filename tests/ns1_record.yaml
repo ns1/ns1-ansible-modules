@@ -1,9 +1,7 @@
 ---
   - hosts: localhost
     vars:
-      test_zone: nsonetestzone.com
       test_record: www
-      # debug: on
     tasks:
       - name: setup
         local_action:
