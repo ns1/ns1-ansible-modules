@@ -69,7 +69,13 @@ options:
       - The SOA TTL value used in the SOA for the zone.
     type: int
     required: false
-    default: None 
+    default: None
+  dnssec:
+    description:
+      - Whether dnssec should be enabled for this zone
+    type: bool
+    required: false
+    default: None
   link:
     description:
       - The domain this zone should be linked to. If you specify link only
@@ -149,7 +155,8 @@ ZONE_KEYS = [
     'primary_port',
     'primary',
     'primary_enabled',
-    'secondaries'
+    'secondaries',
+    'dnssec'
 ]
 
 
@@ -166,6 +173,7 @@ class NS1Zone(NS1ModuleBase):
             networks=dict(required=False, type='list', default=None),
             secondary=dict(required=False, type='dict', default=None),
             primary=dict(required=False, type='str', default=None),
+            dnssec=dict(required=False, type='bool', default=None),
             state=dict(
                 required=False,
                 type='str',

@@ -1,7 +1,5 @@
 ---
   - hosts: localhost
-    vars:
-      test_zone: sometestzone19.com
 
     tasks:
       - name: setup
@@ -49,6 +47,21 @@
             - zone_update is changed
             - zone_update.data.refresh == 400
             - zone_update.data.ttl == 400
+
+      - name: Test enabling dnssec
+        local_action:
+          module: ns1_zone
+          apiKey: "{{ ns1_token }}"
+          name: "{{ test_zone }}"
+          dnssec: True
+          state: present
+        register: zone_enable_dnssec
+
+      - name: Verify dnssec enabled
+        assert:
+          that:
+            - zone_enable_dnssec is changed
+            - zone_enable_dnssec.data.dnssec == True
 
       - name: Test linked zone creation
         local_action:
