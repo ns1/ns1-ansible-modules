@@ -1,7 +1,7 @@
 ns1-ansible-modules
 ====================
 
-This role is the home for all NS1 specific modules.
+This libraray is the home for all NS1 specific modules.  It will serve as a preview for the modules submitted to ansible-core.
 
 Project Overview
 ================
@@ -21,30 +21,32 @@ Still Needed:
 Installation
 ============
 
-Install this from ansible-galaxy. `ansible-galaxy install cruisibesares.ns1`. You will need the ns1 python client version 0.9.2 or greater. This can be installed by running: `pip install nsone`. Additional information can be found here [nsone-python](https://github.com/nsone/nsone-python)
+Install this from ansible-galaxy. `ansible-galaxy install ns1.ns1`. You will need the ns1 python client version 0.9.19 or greater. This can be installed by running: `pip install nsone`. Additional information can be found here [ns1-python](https://github.com/ns1/ns1-python)
 
 Testing
 =======
 
 This module is tested by using ansible directly. 
 
+```
 	git clone https://github.com/ns1/ns1-ansible-modules.git
 	cd ns1-ansible-module
-	ansible -i local, test.yml --extra-vars key=<your ns1 api key> --extra-vars debug=yes --extra-vars test_zone=<a zone you have at ns1>
+	ansible-playbook -i local, tests/<name of module to test>.yaml --extra-vars ns1_token=<your NS1 API key> --extra-vars debug=yes --extra-vars test_zone=<a zone you have at ns1>
+```
 
 The debug flag is optional. You can use any test zone to get started, the only requirement is that it's not yet defined on the NS1 platform. That is, you do not need to make the zone authoritative through your registrar for the ansible module to work correctly.
 
-The current version of the module has been tested with ansible 1.9.2 and python 2.7.10.
+The current version of the module has been tested with Ansible 2.8.2 and python 3.7.2.
 
 Examples
 ========
 
-Check out test.yml which is all working ansible code. All of the resources try to model the [api](https://ns1.com/api/) objects as closely as possible. We will be adding the standard ansible documentation to the modules themselves shortly.
+Check out the integration tests in `tests/`, which is all working ansible code. All of the resources try to model the [api](https://ns1.com/api/) objects as closely as possible. 
 
 Contributing
 ============
 
-Contributions, ideas and criticisms are all welcome. Please keep the ansible test.yml up to date if you do wind up hacking on the project.
+Contributions, ideas and criticisms are all welcome. Please keep the integration tests up to date or add new ones if you do wind up hacking on the project.
 
 Notes:
 =====
