@@ -1,1 +1,7 @@
-test.sh
+# Ansible
+*.retry
+*.log
+
+# IDE
+*.swp
+.vscode/*
