@@ -276,11 +276,11 @@ def update(zone, record, module):
     args = {}
     for i in RECORD_KEYS:
         if (
-            module.params.get(i) and
+            i in module.params and
                 (
                     not cleaned_data or
                     i not in cleaned_data or
-                    module.params.get(i) != cleaned_data[i]
+                    module.params[i] != cleaned_data[i]
                 )
             ):
             changed = True
