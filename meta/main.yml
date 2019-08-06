@@ -1,10 +1,10 @@
 ---
 galaxy_info:
-  author: Che Ruisi-Besares
-  description: This is a package of all the ns1 modules
-  company: ns1
+  author: Matthew Burtless
+  description: "Modules to manage NS1 resources"
+  company: NS1
   license: MIT
-  min_ansible_version: 1.2
+  min_ansible_version: 2.5.0
   platforms:
     - name: EL
       versions:
@@ -39,7 +39,7 @@ galaxy_info:
     - name: Debian
       versions:
         - all
-  categories:
+  galaxy_tags:
     - cloud
     - clustering
     - database
@@ -48,4 +48,5 @@ galaxy_info:
     - networking
     - system
     - web
+    - dns
 dependencies: []
