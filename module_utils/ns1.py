@@ -12,7 +12,7 @@ from ansible.module_utils.basic import AnsibleModule
 
 try:
     from ansible.module_utils.basic import missing_required_lib
-except Exception:
+except ImportError:
     def missing_required_lib(msg, reason=None, url=None):
         return msg
 
