@@ -10,10 +10,10 @@ __metaclass__ = type
 
 from ansible.module_utils.basic import AnsibleModule
 
-try: 
-    from ansible.module_utils.basic import missing_required_lib 
-except Exception: 
-    def missing_required_lib(msg, reason=None, url=None): 
+try:
+    from ansible.module_utils.basic import missing_required_lib
+except ImportError:
+    def missing_required_lib(msg, reason=None, url=None):
         return msg
 
 HAS_NS1 = True
@@ -25,7 +25,11 @@ except ImportError:
     HAS_NS1 = False
 
 
-NS1_COMMON_ARGS = dict(apiKey=dict(required=True, no_log=True))
+NS1_COMMON_ARGS = dict(
+    apiKey=dict(required=True, no_log=True),
+    endpoint=dict(required=False, type='str', default=None),
+    ignore_ssl=dict(required=False, type='bool', default=None)
+)
 
 
 class NS1ModuleBase(object):
@@ -50,6 +54,10 @@ class NS1ModuleBase(object):
         self.config = Config()
         self.config.createFromAPIKey(self.module.params["apiKey"])
         self.config['transport'] = 'basic'
+        if self.module.params["endpoint"]:
+            self.config["endpoint"] = self.module.params["endpoint"]
+        if self.module.params["ignore_ssl"]:
+            self.config["ignore-ssl-errors"] = self.module.params["ignore_ssl"]
         self.ns1 = NS1(config=self.config)
 
     def errback_generator(self):
