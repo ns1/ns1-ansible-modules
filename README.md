@@ -35,7 +35,7 @@ This module is tested by using ansible directly.
 ```
 	git clone https://github.com/ns1/ns1-ansible-modules.git
 	cd ns1-ansible-module
-	ansible-playbook -i local, tests/<name of module to test>.yaml --extra-vars ns1_token=<your NS1 API key> --extra-vars test_zone=<a zone you have at ns1>
+	ansible-playbook -i local tests/<name of module to test>.yaml --extra-vars ns1_token=<your NS1 API key> --extra-vars test_zone=<a zone you have at ns1>
 ```
 
 You can use any test zone to get started, the only requirement is that it's not yet defined on the NS1 platform. That is, you do not need to make the zone authoritative through your registrar for the ansible module to work correctly.
