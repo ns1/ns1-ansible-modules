@@ -1,4 +1,7 @@
-## 2.1.0 (Unreleased)
+## 2.1.0 (January 13, 2020)
+
+ENHANCEMENTS
+* Add support to both modules for setting custom API endpoint and ignoring SSL verification ([#23](https://github.com/ns1/ns1-ansible-modules/pull/23))
 
 ## 2.0.0 (August 05, 2019)
 
