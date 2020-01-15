@@ -97,6 +97,22 @@ options:
     type: dict
     required: false
     default: None
+    suboptions:
+      enabled:
+        description:
+          - If true the zone is configured as a secondary zone.
+        type: bool
+        required: false
+      primary_ip:
+        description:
+          - An IPv4 address, not a hostname, for the primary DNS server for the zone.
+        type: str
+        required: false
+      primary_port:
+        description:
+          - Port of primary DNS server.  Only include if not running on standard port.
+        type: int
+        required: false
   primary:
     description:
       - To enable slaving of your zone by third party DNS servers,
@@ -141,6 +157,14 @@ except ImportError:
     # This is handled in NS1 module_utils
     pass
 
+SECONDARY_KEYS = [
+  'enabled',
+  'primary_ip',
+  'primary_port',
+  'other_ips',
+  'other_ports',
+]
+
 ZONE_KEYS = [
     'refresh',
     'retry',
@@ -171,7 +195,16 @@ class NS1Zone(NS1ModuleBase):
             ttl=dict(required=False, type='int', default=None),
             link=dict(required=False, type='str', default=None),
             networks=dict(required=False, type='list', default=None),
-            secondary=dict(required=False, type='dict', default=None),
+            secondary=dict(
+                required=False,
+                type='dict',
+                default=None,
+                options=dict(
+                    enabled=dict(type='bool', default=False),
+                    primary_ip=dict(required=False, type='str', default=None),
+                    primary_port=dict(required=False, type='int', default=None),
+                ),
+            ),
             primary=dict(required=False, type='str', default=None),
             dnssec=dict(required=False, type='bool', default=None),
             state=dict(
@@ -197,12 +230,25 @@ class NS1Zone(NS1ModuleBase):
                                mutually_exclusive=self.mutually_exclusive)
         self.exec_module()
 
+    def remove_empty_subparams(self, param_val):
+        if isinstance(param_val, dict):
+            return dict(
+                (key, value)
+                for key, value in param_val.items()
+                if value is not None
+            )
+        return param_val
+
     def api_params(self):
-        params = dict(
-            (key, self.module.params.get(key))
-            for key in ZONE_KEYS
-            if self.module.params.get(key) is not None
-        )
+        params = {}
+        for key in ZONE_KEYS:
+            param_val = self.module.params.get(key)
+            if param_val is not None:
+                if isinstance(param_val, dict):
+                    params[key] = self.remove_empty_subparams(param_val)
+                else:
+                    params[key] = param_val
+
         return params
 
     def get_zone(self):
@@ -217,21 +263,55 @@ class NS1Zone(NS1ModuleBase):
                 zone = None
         return zone
 
+    def key_changed(self, param_key, param_val, zone_data):
+        if param_val is not None and (
+            not zone_data
+            or param_key not in zone_data
+            or param_val != zone_data[param_key]
+        ):
+            return True
+
+        return False
+
+    def secondary_changed(self, secondary, zone_data):
+        changed = False
+        secondary_args = {}
+
+        # no change if secondary doesn't exist or is empty
+        if secondary is None or not bool(secondary):
+            return False, secondary_args
+
+        # if zone was not previously a secondary, this must be a change
+        if "secondary" not in zone_data:
+            return True, self.remove_empty_subparams(secondary)
+
+        for key in SECONDARY_KEYS:
+            if key in secondary and self.key_changed(
+                key, secondary[key], zone_data["secondary"]
+            ):
+                changed = True
+                secondary_args[key] = secondary[key]
+
+        return changed, secondary_args
+
     def update(self, zone):
         changed = False
         args = {}
 
         for key in ZONE_KEYS:
-            if (
-                    self.module.params.get(key) is not None and
-                    (
-                        not zone.data or
-                        key not in zone.data or
-                        self.module.params.get(key) != zone.data[key]
-                    )
+            param_val = self.module.params.get(key)
+            if key == "secondary":
+                found_change, secondary_args = self.secondary_changed(
+                    param_val, zone.data
+                )
+                if found_change:
+                    changed = True
+                    args["secondary"] = secondary_args
+            if key != "secondary" and self.key_changed(
+                key, param_val, zone.data
             ):
                 changed = True
-                args[key] = self.module.params.get(key)
+                args[key] = param_val
 
         if self.module.check_mode:
             # check mode short circuit before update
