@@ -8,4 +8,5 @@
 
 # Python
 *.pyc
+__pycache_/
 .python-version
