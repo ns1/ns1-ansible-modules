@@ -7,8 +7,10 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-
-from ansible.module_utils.ns1 import NS1ModuleBase, HAS_NS1
+try:
+    from ansible.module_utils.ns1 import NS1ModuleBase, HAS_NS1
+except ImportError:
+    from module_utils.ns1 import NS1ModuleBase, HAS_NS1 # noqa
 ANSIBLE_METADATA = {
     'metadata_version': '1.1',
     'status': ['preview'],
@@ -97,6 +99,37 @@ options:
     type: dict
     required: false
     default: None
+    suboptions:
+      enabled:
+        description:
+          - If true the zone is configured as a secondary zone.
+        type: bool
+        required: false
+      primary_ip:
+        description:
+          - An IPv4 address, not a hostname, for the primary DNS server for
+            the zone.
+        type: str
+        required: false
+      primary_port:
+        description:
+          - Port of primary DNS server.  Only needs to be included if DNS is
+            not running on standard port.
+        type: int
+        required: false
+      other_ips:
+        description:
+          - A list of IPv4 addresses for additional primary DNS servers for
+            the zone.
+        type: list
+        required: false
+        default: None
+      other_ports:
+        description:
+          - A list of ports for additional primary DNS servers for the zone.
+        type: list
+        required: false
+        default: None
   primary:
     description:
       - To enable slaving of your zone by third party DNS servers,
@@ -135,28 +168,26 @@ RETURN = '''
 
 
 try:
-    from ns1 import NS1, Config
     from ns1.rest.errors import ResourceException
 except ImportError:
     # This is handled in NS1 module_utils
     pass
 
-ZONE_KEYS = [
-    'refresh',
-    'retry',
-    'expiry',
-    'nx_ttl',
-    'ttl',
-    'link',
+
+# list of keys that should be treated like a set() during diff
+SET_KEYS = [
+    'other_ips',
+    'other_ports',
     'networks',
-    'secondary',
-    'secondary_enabled',
-    'primary_ip',
-    'primary_port',
-    'primary',
-    'primary_enabled',
-    'secondaries',
-    'dnssec'
+]
+
+# list of keys that should be ignored for calls to API
+API_IGNORED_KEYS = [
+    'name',
+    'apiKey',
+    'endpoint',
+    'ignore_ssl',
+    'state',
 ]
 
 
@@ -171,7 +202,26 @@ class NS1Zone(NS1ModuleBase):
             ttl=dict(required=False, type='int', default=None),
             link=dict(required=False, type='str', default=None),
             networks=dict(required=False, type='list', default=None),
-            secondary=dict(required=False, type='dict', default=None),
+            secondary=dict(
+                required=False,
+                type='dict',
+                default=None,
+                options=dict(
+                    enabled=dict(type='bool', default=False),
+                    primary_ip=dict(required=False, type='str', default=None),
+                    primary_port=dict(
+                      required=False,
+                      type='int',
+                      default=None
+                    ),
+                    other_ips=dict(required=False, type='list', default=None),
+                    other_ports=dict(
+                      required=False,
+                      type='list',
+                      default=None
+                    ),
+                ),
+            ),
             primary=dict(required=False, type='str', default=None),
             dnssec=dict(required=False, type='bool', default=None),
             state=dict(
@@ -195,15 +245,15 @@ class NS1Zone(NS1ModuleBase):
         NS1ModuleBase.__init__(self, self.module_arg_spec,
                                supports_check_mode=True,
                                mutually_exclusive=self.mutually_exclusive)
-        self.exec_module()
 
-    def api_params(self):
-        params = dict(
-            (key, self.module.params.get(key))
-            for key in ZONE_KEYS
-            if self.module.params.get(key) is not None
-        )
-        return params
+    def sanitize_params(self, params):
+        sanitized = {}
+        for k, v in params.items():
+            if isinstance(v, dict):
+                v = self.sanitize_params(v)
+            if v is not None and k not in API_IGNORED_KEYS:
+                sanitized[k] = v
+        return sanitized
 
     def get_zone(self):
         zone = None
@@ -211,27 +261,45 @@ class NS1Zone(NS1ModuleBase):
             zone = self.ns1.loadZone(self.module.params.get('name'))
         except ResourceException as re:
             if re.response.code != 404:
-                module.fail_json(
+                self.module.fail_json(
                     msg="error code %s - %s " % (re.response.code, re.message)
                 )
                 zone = None
         return zone
 
+    def compare_params(self, have, want):
+        '''
+        compare_zones compares the current zone to the one we want based on
+        params.  Returns a diff to use as params in update
+        '''
+        diff = {}
+        for param, value in want.items():
+            if param not in have:
+                diff[param] = value
+                continue
+            # if param has subparams, call compare_params on subparam dict
+            if isinstance(value, dict):
+                subparam_diff = self.compare_params(have[param], value)
+                if subparam_diff:
+                    diff[param] = subparam_diff
+            # if param is list, check if it should be compared as a set
+            elif isinstance(value, list) and param in SET_KEYS:
+                if set(have[param]) != set(value):
+                    diff[param] = value
+            # else compare as value
+            elif have[param] != value:
+                diff[param] = value
+        return diff
+
     def update(self, zone):
         changed = False
         args = {}
 
-        for key in ZONE_KEYS:
-            if (
-                    self.module.params.get(key) is not None and
-                    (
-                        not zone.data or
-                        key not in zone.data or
-                        self.module.params.get(key) != zone.data[key]
-                    )
-            ):
-                changed = True
-                args[key] = self.module.params.get(key)
+        want = self.sanitize_params(self.module.params)
+        # compare zone.data and wanted state
+        args = self.compare_params(zone.data, want)
+        if args:
+            changed = True
 
         if self.module.check_mode:
             # check mode short circuit before update
@@ -243,39 +311,50 @@ class NS1Zone(NS1ModuleBase):
 
         self.module.exit_json(changed=changed, id=zone['id'], data=zone.data)
 
+    def create(self, zone):
+        if self.module.check_mode:
+            # short circuit in check mode
+            self.module.exit_json(changed=True)
+
+        zone = self.ns1.createZone(
+            self.module.params.get('name'),
+            errback=self.errback_generator(),
+            **self.sanitize_params(self.module.params)
+        )
+        self.module.exit_json(
+            changed=True, id=zone['id'], data=zone.data)
+
+    def delete(self, zone):
+        if self.module.check_mode:
+            # short circut in check mode
+            self.module.exit_json(changed=True)
+        zone.delete(errback=self.errback_generator())
+        self.module.exit_json(changed=True)
+
     def exec_module(self):
         state = self.module.params.get('state')
         zone = self.get_zone()
+        if state == "present":
+            self.present(zone)
+        if state == "absent":
+            self.absent(zone)
 
-        # zone found
+    def present(self, zone):
         if zone:
-            if state == "absent":
-                if self.module.check_mode:
-                    # short circut in check mode
-                    self.module.exit_json(changed=True)
-
-                zone.delete(errback=self.errback_generator())
-                self.module.exit_json(changed=True)
-            else:
-                self.update(zone)
+            self.update(zone)
         else:
-            if state == "absent":
-                self.module.exit_json(changed=False)
-            else:
-                if self.module.check_mode:
-                    # short circuit in check mode
-                    self.module.exit_json(changed=True)
-                zone = self.ns1.createZone(
-                    self.module.params.get('name'),
-                    errback=self.errback_generator(),
-                    **self.api_params()
-                )
-                self.module.exit_json(
-                    changed=True, id=zone['id'], data=zone.data)
+            self.create(zone)
+
+    def absent(self, zone):
+        if zone:
+            self.delete(zone)
+        else:
+            self.module.exit_json(changed=False)
 
 
 def main():
-    NS1Zone()
+    z = NS1Zone()
+    z.exec_module()
 
 
 if __name__ == '__main__':

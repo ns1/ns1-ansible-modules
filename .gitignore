@@ -5,3 +5,7 @@
 # IDE
 *.swp
 .vscode/*
+
+# Python
+*.pyc
+.python-version
