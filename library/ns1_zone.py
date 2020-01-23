@@ -269,32 +269,30 @@ class NS1Zone(NS1ModuleBase):
 
     def compare_params(self, have, want):
         '''
-        compare_zones compares the current zone to the one we want based on
-        params.  Returns a diff to use as params in update
+        compare_params performs deep comparison of two sets of params.
+        Returns all vals from want that differ from have.
         '''
         diff = {}
-        for param, value in want.items():
+        for param, wanted_val in want.items():
             if param not in have:
-                diff[param] = value
+                diff[param] = wanted_val
                 continue
-            # if param has subparams, call compare_params on subparam dict
-            if isinstance(value, dict):
-                subparam_diff = self.compare_params(have[param], value)
+            if isinstance(wanted_val, dict):
+                subparam_diff = self.compare_params(have[param], wanted_val)
                 if subparam_diff:
                     diff[param] = subparam_diff
-            # if param is list, check if it should be compared as a set
-            elif isinstance(value, list) and param in SET_KEYS:
-                if set(have[param]) != set(value):
-                    diff[param] = value
-            # else compare as value
-            elif have[param] != value:
-                diff[param] = value
+            elif isinstance(wanted_val, list) and param in SET_KEYS:
+                if set(have[param]) != set(wanted_val):
+                    diff[param] = wanted_val
+            elif have[param] != wanted_val:
+                diff[param] = wanted_val
         return diff
 
     def update(self, zone):
         changed = False
         args = {}
 
+        # create desired end state based on params
         want = self.sanitize_params(self.module.params)
         # compare zone.data and wanted state
         args = self.compare_params(zone.data, want)
