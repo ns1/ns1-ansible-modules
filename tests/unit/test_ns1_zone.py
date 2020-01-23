@@ -2,7 +2,11 @@ import pytest
 import ns1.zones
 from .common import FakeAnsibleModule, AnsibleExitJson, AnsibleFailJson
 from library import ns1_zone
-from unittest.mock import patch
+
+try:  # Python 3.3 +
+    from unittest.mock import patch
+except ImportError:
+    from mock import patch
 
 
 @pytest.mark.usefixtures("mock_module_helper")
@@ -98,7 +102,7 @@ def test_update(mock_zone_update, ns1_config, zone_data, module_args, exp_change
     mock_zone = ns1.zones.Zone(ns1_config, m.name)
     mock_zone.data = m.get_zone_data(**zone_data)
 
-    exp_exit_json = "'changed': {}".format(exp_changed)
+    exp_exit_json = "'changed': {0}".format(exp_changed)
     with pytest.raises(AnsibleExitJson, match=exp_exit_json):
         FakeAnsibleModule.set_module_args(m.get_args(**module_args))
         z = ns1_zone.NS1Zone()

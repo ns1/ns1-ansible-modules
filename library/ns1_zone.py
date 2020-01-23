@@ -174,15 +174,15 @@ except ImportError:
     pass
 
 
-# list of keys that should be treated like a set() during diff
+# list of keys that should be treated as set during diff
 SET_KEYS = [
     'other_ips',
     'other_ports',
     'networks',
 ]
 
-# list of keys that should be ignored for calls to API
-API_IGNORED_KEYS = [
+# list of keys that should be sanitized before calls to API
+SANITIZED_KEYS = [
     'name',
     'apiKey',
     'endpoint',
@@ -251,7 +251,7 @@ class NS1Zone(NS1ModuleBase):
         for k, v in params.items():
             if isinstance(v, dict):
                 v = self.sanitize_params(v)
-            if v is not None and k not in API_IGNORED_KEYS:
+            if v is not None and k not in SANITIZED_KEYS:
                 sanitized[k] = v
         return sanitized
 

@@ -1,8 +1,12 @@
 import pytest
-from unittest.mock import patch
 from ns1 import Config
 from ansible.module_utils import basic
 from .common import FakeAnsibleModule
+
+try:  # Python 3.3 +
+    from unittest.mock import patch
+except ImportError:
+    from mock import patch
 
 
 @pytest.fixture

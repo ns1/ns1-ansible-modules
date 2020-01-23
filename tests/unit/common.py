@@ -1,24 +1,31 @@
 from ansible.module_utils._text import to_bytes
 from ansible.module_utils import basic
-from unittest.mock import ANY
 import json
+
+try:  # Python 3.3 +
+    from unittest.mock import ANY
+except ImportError:
+    from mock import ANY
 
 
 class FakeAnsibleModule:
     def __init__(self, name):
         self.name = name
 
+    @staticmethod
     def set_module_args(args):
         """prepare arguments so that they will be picked up during module creation"""
         args = json.dumps({'ANSIBLE_MODULE_ARGS': args})
         basic._ANSIBLE_ARGS = to_bytes(args)
 
+    @staticmethod
     def exit_json(*args, **kwargs):
         """function to patch over exit_json; package return data into an exception"""
         if 'changed' not in kwargs:
             kwargs['changed'] = False
         raise AnsibleExitJson(kwargs)
 
+    @staticmethod
     def fail_json(*args, **kwargs):
         """function to patch over fail_json; package return data into an exception"""
         kwargs['failed'] = True
