@@ -1,6 +1,6 @@
 import pytest
 import ns1.zones
-from .common import FakeAnsibleModule, AnsibleExitJson, AnsibleFailJson
+from .common import FakeAnsibleModule, AnsibleFailJson
 from library import ns1_zone
 
 try:  # Python 3.3 +
@@ -79,38 +79,51 @@ def test_compare_params(have, want, exp):
 
 
 @pytest.mark.parametrize(
-    "zone_data,module_args,exp_changed,exp_update",
+    "zone_data,args",
     [
-        pytest.param({"nx_ttl": 0}, {"nx_ttl": 0}, False, {}, id="no_change"),
-        pytest.param({"nx_ttl": 0}, {"nx_ttl": 1}, True, {"nx_ttl": 1}, id="change_param"),
-        pytest.param({"networks": [1,2]}, {"networks": [2,1]}, False, {}, id="no_change_set"),
-        pytest.param({"networks": [1]}, {"networks": [1,2]}, True, {"networks": [1,2]}, id="change_set"),
+        pytest.param({"nx_ttl": 0}, {"nx_ttl": 1}, id="update_param"),
+        pytest.param({"networks": [1]}, {"networks": [1, 2]}, id="update_list"),
         pytest.param(
             {"secondary": {"enabled": True}},
             {"secondary": {"enabled": True, "primary_ip": "1.1.1.1"}},
-            True,
-            {"secondary": {"primary_ip": "1.1.1.1"}},
-            id="change_suboption"
+            id="update_suboption"
         ),
     ]
 )
 @pytest.mark.usefixtures("mock_module_helper")
 @patch("ns1.zones.Zone.update")
-def test_update(mock_zone_update, ns1_config, zone_data, module_args, exp_changed, exp_update):
+def test_update(mock_zone_update, ns1_config, zone_data, args):
     m = FakeAnsibleModule("test.zone")
 
     mock_zone = ns1.zones.Zone(ns1_config, m.name)
     mock_zone.data = m.get_zone_data(**zone_data)
 
-    exp_exit_json = "'changed': {0}".format(exp_changed)
-    with pytest.raises(AnsibleExitJson, match=exp_exit_json):
-        FakeAnsibleModule.set_module_args(m.get_args(**module_args))
-        z = ns1_zone.NS1Zone()
-        z.update(mock_zone)
-    if exp_changed:
-        mock_zone_update.assert_called_once_with(**m.get_request_args(**exp_update))
+    z = ns1_zone.NS1Zone()
+    zone = z.update(mock_zone, args)
+    mock_zone_update.assert_called_once_with(**m.get_request_args(**args))
+    assert zone != mock_zone
+
+
+@pytest.mark.parametrize("check_mode", [True, False])
+@pytest.mark.usefixtures("mock_module_helper")
+@patch("ns1.zones.Zone.update")
+def test_update_checkmode(mock_zone_update, ns1_config, check_mode):
+    m = FakeAnsibleModule("test.zone")
+
+    mock_zone = ns1.zones.Zone(ns1_config, m.name)
+    mock_zone.data = m.get_zone_data(nx_ttl=0)
+
+    z = ns1_zone.NS1Zone()
+    args = {"nx_ttl": 1}
+
+    z.module.check_mode = check_mode
+    zone = z.update(mock_zone, args)
+    if check_mode:
+        mock_zone_update.assert_not_called()
+        assert zone is None
     else:
-        assert not mock_zone_update.called
+        mock_zone_update.assert_called_once_with(**m.get_request_args(**args))
+        assert zone != mock_zone
 
 
 @pytest.mark.parametrize(

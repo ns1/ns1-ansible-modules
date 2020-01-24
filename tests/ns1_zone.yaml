@@ -28,8 +28,8 @@
         assert:
           that:
             - zone_create is changed
-            - zone_create.data.zone == "{{ test_zone }}"
-            - zone_create.data.refresh == 200
+            - zone_create.zone.zone == "{{ test_zone }}"
+            - zone_create.zone.refresh == 200
 
       - name: Test zone update
         local_action:
@@ -45,8 +45,8 @@
         assert:
           that:
             - zone_update is changed
-            - zone_update.data.refresh == 400
-            - zone_update.data.ttl == 400
+            - zone_update.zone.refresh == 400
+            - zone_update.zone.ttl == 400
 
       - name: Test enabling dnssec
         local_action:
@@ -61,7 +61,7 @@
         assert:
           that:
             - zone_enable_dnssec is changed
-            - zone_enable_dnssec.data.dnssec == True
+            - zone_enable_dnssec.zone.dnssec == True
 
       - name: Test disabling dnssec
         local_action:
@@ -76,7 +76,7 @@
         assert:
           that:
             - zone_disable_dnssec is changed
-            - zone_disable_dnssec.data.dnssec == False
+            - zone_disable_dnssec.zone.dnssec == False
 
       - name: Test linked zone creation
         local_action:
@@ -91,7 +91,7 @@
         assert:
           that:
             - linked_zone is changed
-            - linked_zone.data.link == "{{ test_zone }}"
+            - linked_zone.zone.link == "{{ test_zone }}"
  
       - name: Delete linked zone
         local_action:

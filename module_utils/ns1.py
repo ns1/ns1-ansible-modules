@@ -20,7 +20,6 @@ HAS_NS1 = True
 
 try:
     from ns1 import NS1, Config
-    from ns1.rest.errors import ResourceException
 except ImportError:
     HAS_NS1 = False
 
