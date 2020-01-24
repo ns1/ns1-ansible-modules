@@ -33,10 +33,8 @@ def test_module_fail_when_required_args_missing():
             id="missing_dict_param",
         ),
         pytest.param(
-            {"nx_ttl": 0},
-            {"nx_ttl": 1},
-            {"nx_ttl": 1},
-            id="updated_param"),
+            {"nx_ttl": 0}, {"nx_ttl": 1}, {"nx_ttl": 1}, id="updated_param"
+        ),
         pytest.param(
             {"networks": [1, 2, 3]},
             {"networks": [3, 4, 5]},
@@ -82,13 +80,15 @@ def test_compare_params(have, want, exp):
     "zone_data,args",
     [
         pytest.param({"nx_ttl": 0}, {"nx_ttl": 1}, id="update_param"),
-        pytest.param({"networks": [1]}, {"networks": [1, 2]}, id="update_list"),
+        pytest.param(
+            {"networks": [1]}, {"networks": [1, 2]}, id="update_list"
+        ),
         pytest.param(
             {"secondary": {"enabled": True}},
             {"secondary": {"enabled": True, "primary_ip": "1.1.1.1"}},
-            id="update_suboption"
+            id="update_suboption",
         ),
-    ]
+    ],
 )
 @pytest.mark.usefixtures("mock_module_helper")
 @patch("ns1.zones.Zone.update")
@@ -131,26 +131,22 @@ def test_update_checkmode(mock_zone_update, ns1_config, check_mode):
     [
         pytest.param({"nx_ttl": 0}, {"nx_ttl": 0}, id="single_param"),
         pytest.param(
-            {"nx_ttl": 0, "ttl": None},
-            {"nx_ttl": 0},
-            id="none_param",
+            {"nx_ttl": 0, "ttl": None}, {"nx_ttl": 0}, id="none_param",
         ),
         pytest.param(
-            {"nx_ttl": 0, "name": "foo"},
-            {"nx_ttl": 0},
-            id="ignored_param",
+            {"nx_ttl": 0, "name": "foo"}, {"nx_ttl": 0}, id="ignored_param",
         ),
         pytest.param(
             {"secondary": {"enabled": True, "primary_ip": "1.1.1.1"}},
             {"secondary": {"enabled": True, "primary_ip": "1.1.1.1"}},
-            id="suboption"
+            id="suboption",
         ),
         pytest.param(
             {"secondary": {"enabled": True, "primary_ip": None}},
             {"secondary": {"enabled": True}},
-            id="none_suboption"
+            id="none_suboption",
         ),
-    ]
+    ],
 )
 def test_sanitize_params(module_args, exp_params):
     z = ns1_zone.NS1Zone()

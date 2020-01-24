@@ -4,16 +4,17 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 
 ANSIBLE_METADATA = {
-    'metadata_version': '1.1',
-    'status': ['preview'],
-    'supported_by': 'community',
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
 }
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: ns1_zone
 
@@ -139,9 +140,9 @@ extends_documentation_fragment:
 
 author:
   - 'Matthew Burtless (@mburtless)'
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: create zone
   local_action:
     module: ns1_zone
@@ -158,18 +159,18 @@ EXAMPLES = r'''
     name: "{{ test_zone }}"
     state: absent
   register: return
-'''
+"""
 
-RETURN = r'''
-'''
+RETURN = r"""
+"""
 
-import functools # noqa
+import functools  # noqa
 
 try:
     from ansible.module_utils.ns1 import NS1ModuleBase, HAS_NS1
 except ImportError:
     # import via absolute path when running via pytest
-    from module_utils.ns1 import NS1ModuleBase, HAS_NS1 # noqa
+    from module_utils.ns1 import NS1ModuleBase, HAS_NS1  # noqa
 
 try:
     from ns1.rest.errors import ResourceException
@@ -180,79 +181,79 @@ except ImportError:
 
 # list of params that should be treated as set during diff
 SET_PARAMS = [
-    'other_ips',
-    'other_ports',
-    'networks',
+    "other_ips",
+    "other_ports",
+    "networks",
 ]
 
 # list of params that should be removed before calls to API
 SANITIZED_PARAMS = [
-    'name',
-    'apiKey',
-    'endpoint',
-    'ignore_ssl',
-    'state',
+    "name",
+    "apiKey",
+    "endpoint",
+    "ignore_ssl",
+    "state",
 ]
 
 
 class NS1Zone(NS1ModuleBase):
     """Represents the NS1 Zone module implementation
     """
+
     def __init__(self):
         """Constructor method
         """
         self.module_arg_spec = dict(
-            name=dict(required=True, type='str'),
-            refresh=dict(required=False, type='int', default=None),
-            retry=dict(required=False, type='int', default=None),
-            expiry=dict(required=False, type='int', default=None),
-            nx_ttl=dict(required=False, type='int', default=None),
-            ttl=dict(required=False, type='int', default=None),
-            link=dict(required=False, type='str', default=None),
-            networks=dict(required=False, type='list', default=None),
+            name=dict(required=True, type="str"),
+            refresh=dict(required=False, type="int", default=None),
+            retry=dict(required=False, type="int", default=None),
+            expiry=dict(required=False, type="int", default=None),
+            nx_ttl=dict(required=False, type="int", default=None),
+            ttl=dict(required=False, type="int", default=None),
+            link=dict(required=False, type="str", default=None),
+            networks=dict(required=False, type="list", default=None),
             secondary=dict(
                 required=False,
-                type='dict',
+                type="dict",
                 default=None,
                 options=dict(
-                    enabled=dict(type='bool', default=False),
-                    primary_ip=dict(required=False, type='str', default=None),
+                    enabled=dict(type="bool", default=False),
+                    primary_ip=dict(required=False, type="str", default=None),
                     primary_port=dict(
-                      required=False,
-                      type='int',
-                      default=None
+                        required=False, type="int", default=None
                     ),
-                    other_ips=dict(required=False, type='list', default=None),
+                    other_ips=dict(required=False, type="list", default=None),
                     other_ports=dict(
-                      required=False,
-                      type='list',
-                      default=None
+                        required=False, type="list", default=None
                     ),
                 ),
             ),
-            primary=dict(required=False, type='str', default=None),
-            dnssec=dict(required=False, type='bool', default=None),
+            primary=dict(required=False, type="str", default=None),
+            dnssec=dict(required=False, type="bool", default=None),
             state=dict(
                 required=False,
-                type='str',
-                default='present',
-                choices=['present', 'absent'],
+                type="str",
+                default="present",
+                choices=["present", "absent"],
             ),
         )
         self.mutually_exclusive = [
-            ['link', 'networks'],
-            ['link', 'retry'],
-            ['link', 'expiry'],
-            ['link', 'nx_ttl'],
-            ['link', 'ttl'],
-            ['link', 'secondary'],
-            ['link', 'primary'],
-            ['link', 'refresh']
+            ["link", "networks"],
+            ["link", "retry"],
+            ["link", "expiry"],
+            ["link", "nx_ttl"],
+            ["link", "ttl"],
+            ["link", "secondary"],
+            ["link", "primary"],
+            ["link", "refresh"],
         ]
 
-        NS1ModuleBase.__init__(self, self.module_arg_spec,
-                               supports_check_mode=True,
-                               mutually_exclusive=self.mutually_exclusive)
+        NS1ModuleBase.__init__(
+            self,
+            self.module_arg_spec,
+            supports_check_mode=True,
+            mutually_exclusive=self.mutually_exclusive,
+        )
 
     def skip_in_check_mode(func):
         """Decorater function that skips passed function if module is in check_mode.  If module is not in check_mode, passed function executes normally.
@@ -262,11 +263,13 @@ class NS1Zone(NS1ModuleBase):
         :return: Wrapped function
         :rtype: func
         """
+
         @functools.wraps(func)
         def wrapper(self, *args, **kwargs):
             if self.module.check_mode:
                 return
             return func(self, *args, **kwargs)
+
         return wrapper
 
     def sanitize_params(self, params):
@@ -300,7 +303,8 @@ class NS1Zone(NS1ModuleBase):
             except ResourceException as re:
                 if re.response.code != 404:
                     self.module.fail_json(
-                        msg="error code %s - %s " % (re.response.code, re.message)
+                        msg="error code %s - %s "
+                        % (re.response.code, re.message)
                     )
                     zone = None
         return zone
@@ -354,7 +358,7 @@ class NS1Zone(NS1ModuleBase):
         :rtype: [type]
         """
         return self.ns1.createZone(
-            self.module.params.get('name'),
+            self.module.params.get("name"),
             errback=self.errback_generator(),
             **args
         )
@@ -375,8 +379,8 @@ class NS1Zone(NS1ModuleBase):
         :rtype: dict
         """
         changed = False
-        state = self.module.params.get('state')
-        zone = self.get_zone(self.module.params.get('name'))
+        state = self.module.params.get("state")
+        zone = self.get_zone(self.module.params.get("name"))
         if state == "present":
             changed, zone = self.present(zone)
         if state == "absent":
@@ -444,5 +448,5 @@ def main():
     z.module.exit_json(**result)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

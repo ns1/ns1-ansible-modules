@@ -15,29 +15,29 @@ class FakeAnsibleModule:
     @staticmethod
     def set_module_args(args):
         """prepare arguments so that they will be picked up during module creation"""
-        args = json.dumps({'ANSIBLE_MODULE_ARGS': args})
+        args = json.dumps({"ANSIBLE_MODULE_ARGS": args})
         basic._ANSIBLE_ARGS = to_bytes(args)
 
     @staticmethod
     def exit_json(*args, **kwargs):
         """function to patch over exit_json; package return data into an exception"""
-        if 'changed' not in kwargs:
-            kwargs['changed'] = False
+        if "changed" not in kwargs:
+            kwargs["changed"] = False
         raise AnsibleExitJson(kwargs)
 
     @staticmethod
     def fail_json(*args, **kwargs):
         """function to patch over fail_json; package return data into an exception"""
-        kwargs['failed'] = True
+        kwargs["failed"] = True
         raise AnsibleFailJson(kwargs)
 
     def get_bin_path(self, arg, required=False):
         """Mock AnsibleModule.get_bin_path"""
-        if arg.endswith('my_command'):
-            return '/usr/bin/my_command'
+        if arg.endswith("my_command"):
+            return "/usr/bin/my_command"
         else:
             if required:
-                self.fail_json(msg='%r not found !' % arg)
+                self.fail_json(msg="%r not found !" % arg)
 
     def get_zone_data(self, **kwargs):
         data = {"zone": self.name}
@@ -57,9 +57,11 @@ class FakeAnsibleModule:
 
 class AnsibleExitJson(Exception):
     """Exception class to be raised by module.exit_json and caught by the test case"""
+
     pass
 
 
 class AnsibleFailJson(Exception):
     """Exception class to be raised by module.fail_json and caught by the test case"""
+
     pass

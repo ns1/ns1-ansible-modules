@@ -37,9 +37,11 @@ def ns1_config():
 
 @pytest.fixture()
 def mock_module_helper(request):
-    mock_module_helper = patch.multiple(basic.AnsibleModule,
-                                        exit_json=FakeAnsibleModule.exit_json,
-                                        fail_json=FakeAnsibleModule.fail_json,
-                                        get_bin_path=FakeAnsibleModule.get_bin_path)
+    mock_module_helper = patch.multiple(
+        basic.AnsibleModule,
+        exit_json=FakeAnsibleModule.exit_json,
+        fail_json=FakeAnsibleModule.fail_json,
+        get_bin_path=FakeAnsibleModule.get_bin_path,
+    )
     mock_module_helper.start()
     request.addfinalizer(mock_module_helper.stop)
