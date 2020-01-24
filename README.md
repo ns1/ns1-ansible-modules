@@ -1,4 +1,5 @@
 # ns1-ansible-modules
+> This project is in [active development](https://github.com/ns1/community/blob/master/project_status/ACTIVE_DEVELOPMENT.md).
 
 This role is the home for all NS1 specific modules.  It will serve as a preview for the modules submitted to ansible-core.
 
@@ -64,3 +65,7 @@ filters:
   - filter: {}
 ```
 Even though it still creates the correct resources. It calls out to the api to update each time.
+
+Contributions
+---
+Pull Requests and issues are welcome. See the [NS1 Contribution Guidelines](https://github.com/ns1/community) for more information.
