@@ -11,6 +11,11 @@ except ImportError:
 
 @pytest.fixture
 def zones_update_helper(request):
+    """Patches ns1.zones.Zone.Update function
+
+    :param request: requesting test context
+    :type request: FixtureRequest
+    """
     zones_update_helper = patch("ns1.zones.Zone.update")
     zones_update_helper.start()
     request.addfinalizer(zones_update_helper.stop)
@@ -18,6 +23,11 @@ def zones_update_helper(request):
 
 @pytest.fixture
 def ns1_config():
+    """Returns a mock NS1 SDK config object
+
+    :return: Mock NS1 SDK config object
+    :rtype: Config
+    """
     c = Config()
     c.loadFromDict(
         {
@@ -37,6 +47,11 @@ def ns1_config():
 
 @pytest.fixture()
 def mock_module_helper(request):
+    """Patches Ansible module exit_json, fail_json and get_bin_path methods
+
+    :param request: requesting test context
+    :type request: FixtureRequest
+    """
     mock_module_helper = patch.multiple(
         basic.AnsibleModule,
         exit_json=FakeAnsibleModule.exit_json,

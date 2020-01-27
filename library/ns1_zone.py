@@ -256,7 +256,9 @@ class NS1Zone(NS1ModuleBase):
         )
 
     def skip_in_check_mode(func):
-        """Decorater function that skips passed function if module is in check_mode.  If module is not in check_mode, passed function executes normally.
+        """Decorater function that skips passed function if module is
+        in check_mode.  If module is not in check_mode, passed function
+        executes normally.
 
         :param func: Function to wrap
         :type func: func
@@ -273,7 +275,8 @@ class NS1Zone(NS1ModuleBase):
         return wrapper
 
     def sanitize_params(self, params):
-        """Removes all Ansible module parameters from dict that have no value or are listed in SANITIZED_PARAMS
+        """Removes all Ansible module parameters from dict that have no value
+        or are listed in SANITIZED_PARAMS
 
         :param params: Ansible module parameters
         :type params: dict
@@ -289,7 +292,8 @@ class NS1Zone(NS1ModuleBase):
         return sanitized
 
     def get_zone(self, name):
-        """Retrieves a zone from NS1. If no name is given or zone does not exist, will return None.
+        """Retrieves a zone from NS1. If no name is given or zone does not
+        exist, will return None.
 
         :param name: Name of the zone to retrieve
         :type name: str, optional
@@ -310,7 +314,8 @@ class NS1Zone(NS1ModuleBase):
         return zone
 
     def compare_params(self, have, want):
-        """Performs deep comparison of two sets of Ansible parameters. Returns values from want that differ from have.
+        """Performs deep comparison of two sets of Ansible parameters. Returns
+        values from want that differ from have.
 
         :param have: Existing set of parameters
         :type have: dict
@@ -373,7 +378,8 @@ class NS1Zone(NS1ModuleBase):
         zone.delete(errback=self.errback_generator())
 
     def exec_module(self):
-        """Main execution method of module.  Creates, updates or deletes a zone based on Ansible parameters.
+        """Main execution method of module.  Creates, updates or deletes a
+        zone based on Ansible parameters.
 
         :return: Results of module execution
         :rtype: dict
@@ -389,12 +395,14 @@ class NS1Zone(NS1ModuleBase):
 
     def present(self, zone):
         """Handles use case where desired state of zone is present.
-        If zone is provided, it is updated with params from Ansible that differ from existing values.
-        If zone is not provided, a new zone will be created with params from Ansible.
+        If zone is provided, it is updated with params from Ansible that
+        differ from existing values. If zone is not provided, a new zone will
+        be created with params from Ansible.
 
         :param zone: Zone object of existing zone returned by NS1
         :type zone: dict, optional
-        :return: Tuple in which first value reflects whether or not a change occured and second value is new or updated zone object
+        :return: Tuple in which first value reflects whether or not a change
+        occured and second value is new or updated zone object
         :rtype: tuple(bool, dict)
         """
         changed = False
@@ -412,7 +420,7 @@ class NS1Zone(NS1ModuleBase):
     def absent(self, zone):
         """Handles use case where desired state of zone is absent.
         If zone is provided, it is deleted.
-        
+
         :param zone: Zone object of existing zone returned by NS1
         :type zone: dict, optional
         :return: Whether or not a change occured
