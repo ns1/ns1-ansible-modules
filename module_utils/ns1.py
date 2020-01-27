@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2019, Matthew Burtless <mburtless@ns1.com>
+# Copyright: (c) 2020, NS1
 # Simplified BSD License (see licenses/simplified_bsd.txt or https://opensource.org/licenses/BSD-2-Clause)
 
-# Make coding more python3-ish
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
