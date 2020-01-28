@@ -30,7 +30,18 @@ The previous version of these modules can be installed from ansible-galaxy via `
 
 # Testing
 
-This module is tested by using ansible directly. 
+## Unit Tests
+
+Unit tests use pytest (`pip install pytest`). Python 2.7 also requires mock to be installed (`pip install mock`).
+
+```
+	git clone https://github.com/ns1/ns1-ansible-modules.git
+	cd ns1-ansible-module
+	pytest -v
+```
+
+## Integration Tests
+Integration tests can be executed by using ansible directly. 
 
 ```
 	git clone https://github.com/ns1/ns1-ansible-modules.git
@@ -40,7 +51,7 @@ This module is tested by using ansible directly.
 
 You can use any test zone to get started, the only requirement is that it's not yet defined on the NS1 platform. That is, you do not need to make the zone authoritative through your registrar for the ansible module to work correctly.
 
-The current version of the module has been tested with Ansible 2.8.2 and python 3.7.2.
+The current version of the module has been tested with Ansible 2.9.4 and both Python 3.7.2 and 2.7.17.
 
 # Examples
 
