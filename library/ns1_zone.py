@@ -167,10 +167,10 @@ RETURN = r"""
 import functools  # noqa
 
 try:
-    from ansible.module_utils.ns1 import NS1ModuleBase, HAS_NS1
+    from ansible.module_utils.ns1 import NS1ModuleBase, HAS_NS1, Decorators
 except ImportError:
     # import via absolute path when running via pytest
-    from module_utils.ns1 import NS1ModuleBase, HAS_NS1  # noqa
+    from module_utils.ns1 import NS1ModuleBase, HAS_NS1, Decorators  # noqa
 
 try:
     from ns1.rest.errors import ResourceException
@@ -255,25 +255,6 @@ class NS1Zone(NS1ModuleBase):
             mutually_exclusive=self.mutually_exclusive,
         )
 
-    def skip_in_check_mode(func):
-        """Decorater function that skips passed function if module is
-        in check_mode.  If module is not in check_mode, passed function
-        executes normally.
-
-        :param func: Function to wrap
-        :type func: func
-        :return: Wrapped function
-        :rtype: func
-        """
-
-        @functools.wraps(func)
-        def wrapper(self, *args, **kwargs):
-            if self.module.check_mode:
-                return
-            return func(self, *args, **kwargs)
-
-        return wrapper
-
     def sanitize_params(self, params):
         """Removes all Ansible module parameters from dict that have no value
         or are listed in SANITIZED_PARAMS
@@ -298,7 +279,7 @@ class NS1Zone(NS1ModuleBase):
         :param name: Name of the zone to retrieve
         :type name: str, optional
         :return: zone object returned by NS1
-        :rtype: dict
+        :rtype: ns1.zones.Zone
         """
         zone = None
         if name:
@@ -340,7 +321,7 @@ class NS1Zone(NS1ModuleBase):
                 diff[param] = wanted_val
         return diff
 
-    @skip_in_check_mode
+    @Decorators.skip_in_check_mode
     def update(self, zone, args):
         """Updates the zone in NS1 with values from args
 
@@ -353,7 +334,7 @@ class NS1Zone(NS1ModuleBase):
         """
         return zone.update(errback=self.errback_generator(), **args)
 
-    @skip_in_check_mode
+    @Decorators.skip_in_check_mode
     def create(self, args):
         """Creates a zone in NS1 with the given args.
 
@@ -368,7 +349,7 @@ class NS1Zone(NS1ModuleBase):
             **args
         )
 
-    @skip_in_check_mode
+    @Decorators.skip_in_check_mode
     def delete(self, zone):
         """Deletes a zone in NS1.
 
@@ -408,13 +389,34 @@ class NS1Zone(NS1ModuleBase):
         changed = False
         want = self.sanitize_params(self.module.params)
         if zone:
+            """
             diff = self.compare_params(zone.data, want)
             if diff:
                 changed = True
                 zone = self.update(zone, diff)
+            """
+            changed, zone = self.update_on_diff(zone, want)
         else:
             changed = True
             zone = self.create(want)
+        return changed, zone
+
+    def update_on_diff(self, zone, want):
+        """triggers update of zone if diff between zone and desired state in want
+
+        :param zone: Zone object of existing zone returned by NS1
+        :type zone: dict
+        :param want: Desired state of zone
+        :type want: dict
+        :return: Tuple in which first value reflects whether or not a change
+        occured and second value is new or updated zone object
+        :rtype: tuple(bool, dict)
+        """
+        changed = False
+        diff = self.compare_params(zone.data, want)
+        if diff:
+            changed = True
+            zone = self.update(zone, diff)
         return changed, zone
 
     def absent(self, zone):

@@ -7,13 +7,16 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+import functools  # noqa
 from ansible.module_utils.basic import AnsibleModule
 
 try:
     from ansible.module_utils.basic import missing_required_lib
 except ImportError:
+
     def missing_required_lib(msg, reason=None, url=None):
         return msg
+
 
 HAS_NS1 = True
 
@@ -25,14 +28,18 @@ except ImportError:
 
 NS1_COMMON_ARGS = dict(
     apiKey=dict(required=True, no_log=True),
-    endpoint=dict(required=False, type='str', default=None),
-    ignore_ssl=dict(required=False, type='bool', default=None)
+    endpoint=dict(required=False, type="str", default=None),
+    ignore_ssl=dict(required=False, type="bool", default=None),
 )
 
 
 class NS1ModuleBase(object):
-    def __init__(self, derived_arg_spec, supports_check_mode=False,
-                 mutually_exclusive=None):
+    def __init__(
+        self,
+        derived_arg_spec,
+        supports_check_mode=False,
+        mutually_exclusive=None,
+    ):
         merged_arg_spec = dict()
         merged_arg_spec.update(NS1_COMMON_ARGS)
         if derived_arg_spec:
@@ -41,7 +48,7 @@ class NS1ModuleBase(object):
         self.module = AnsibleModule(
             argument_spec=merged_arg_spec,
             supports_check_mode=supports_check_mode,
-            mutually_exclusive=mutually_exclusive
+            mutually_exclusive=mutually_exclusive,
         )
 
         if not HAS_NS1:
@@ -51,7 +58,7 @@ class NS1ModuleBase(object):
     def _build_ns1(self):
         self.config = Config()
         self.config.createFromAPIKey(self.module.params["apiKey"])
-        self.config['transport'] = 'basic'
+        self.config["transport"] = "basic"
         if self.module.params["endpoint"]:
             self.config["endpoint"] = self.module.params["endpoint"]
         if self.module.params["ignore_ssl"]:
@@ -63,3 +70,25 @@ class NS1ModuleBase(object):
             self.module.fail_json(msg="%s - %s" % (args[0], args[1]))
 
         return errback
+
+
+class Decorators(object):
+    @classmethod
+    def skip_in_check_mode(self, func):
+        """Decorater function that skips passed function if module is
+        in check_mode.  If module is not in check_mode, passed function
+        executes normally.
+
+        :param func: Function to wrap
+        :type func: func
+        :return: Wrapped function
+        :rtype: func
+        """
+
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            if self.module.check_mode:
+                return
+            return func(self, *args, **kwargs)
+
+        return wrapper
