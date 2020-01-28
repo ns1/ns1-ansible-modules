@@ -99,7 +99,53 @@
           apiKey: "{{ ns1_token }}"
           name: "linked-{{ test_zone }}"
           state: absent
-      
+
+      - name: Create secondary zone
+        local_action:
+          module: ns1_zone
+          apiKey: "{{ ns1_token }}"
+          name: "secondary-{{ test_zone }}"
+          secondary:
+            enabled: True
+            primary_ip: "1.1.1.1"
+          state: present
+        register: secondary_zone
+
+      - name: Verify secondary zone creation
+        assert:
+          that:
+            - secondary_zone is changed
+            - secondary_zone.zone.secondary.enabled == True
+
+      - name: Disable secondary zone
+        local_action:
+          module: ns1_zone
+          apiKey: "{{ ns1_token }}"
+          name: "secondary-{{ test_zone }}"
+          secondary:
+            enabled: False
+          state: present
+        register: secondary_zone_disabled
+
+      - name: Verify secondary zone disabled
+        assert:
+          that:
+            - secondary_zone_disabled is changed
+            - secondary_zone_disabled.zone.secondary.enabled == False
+
+      - name: Delete secondary zone
+        local_action:
+          module: ns1_zone
+          apiKey: "{{ ns1_token }}"
+          name: "secondary-{{ test_zone }}"
+          state: absent
+        register: secondary_zone_delete
+
+      - name: Verify secondary zone deleted
+        assert:
+          that:
+            - secondary_zone_delete is changed
+
       - name: Test zone deletion
         local_action:
           module: ns1_zone
