@@ -397,20 +397,11 @@ class NS1Zone(NS1ModuleBase):
         occured and second value is new or updated zone object
         :rtype: tuple(bool, dict)
         """
-        changed = False
         want = self.sanitize_params(self.module.params)
         if zone:
-            """
-            diff = self.compare_params(zone.data, want)
-            if diff:
-                changed = True
-                zone = self.update(zone, diff)
-            """
-            changed, zone = self.update_on_diff(zone, want)
+            return self.update_on_diff(zone, want)
         else:
-            changed = True
-            zone = self.create(want)
-        return changed, zone
+            return True, self.create(want)
 
     def update_on_diff(self, zone, want):
         """triggers update of zone if diff between zone and desired state in want
@@ -423,12 +414,10 @@ class NS1Zone(NS1ModuleBase):
         occured and second value is new or updated zone object
         :rtype: tuple(bool, dict)
         """
-        changed = False
         diff = self.compare_params(zone.data, want)
         if diff:
-            changed = True
-            zone = self.update(zone, diff)
-        return changed, zone
+            return True, self.update(zone, diff)
+        return False, zone
 
     def absent(self, zone):
         """Handles use case where desired state of zone is absent.
@@ -439,12 +428,11 @@ class NS1Zone(NS1ModuleBase):
         :return: Whether or not a change occured
         :rtype: bool
         """
-        changed = False
         if zone:
-            changed = True
             self.delete(zone)
+            return True
 
-        return changed
+        return False
 
     def build_result(self, changed, zone):
         """Builds dict of results from module execution to pass to module.exit_json()
