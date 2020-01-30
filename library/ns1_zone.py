@@ -26,6 +26,11 @@ description:
   - Create, modify and delete zone objects.
 
 options:
+  apiKey:
+    description:
+      - Unique client api key that can be created via the NS1 portal.
+    type: str
+    required: true
   state:
     description:
       - Whether the zone should be present or not.  Use C(present) to create
@@ -64,7 +69,7 @@ options:
     required: false
     default: None
   ttl:
-   description:
+    description:
       - The SOA TTL value used in the SOA for the zone.
     type: int
     required: false
@@ -135,11 +140,17 @@ options:
     required: false
     default: None
 
-extends_documentation_fragment:
-  - ns1
+requirements:
+  - python >= 2.7
+  - ns1-python >= 0.9.19
+
+seealso:
+  - name: Documentation for NS1 API
+    description: Complete reference for the NS1 API.
+    link: https://ns1.com/api/
 
 author:
-  - 'Matthew Burtless (@mburtless)'
+  - 'NS1'
 """
 
 EXAMPLES = r"""
