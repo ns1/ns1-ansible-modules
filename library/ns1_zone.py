@@ -400,8 +400,7 @@ class NS1Zone(NS1ModuleBase):
         want = self.sanitize_params(self.module.params)
         if zone:
             return self.update_on_diff(zone, want)
-        else:
-            return True, self.create(want)
+        return True, self.create(want)
 
     def update_on_diff(self, zone, want):
         """triggers update of zone if diff between zone and desired state in want
