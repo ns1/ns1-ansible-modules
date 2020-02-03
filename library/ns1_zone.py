@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright: (c) 2019, Matthew Burtless <mburtless@ns1.com>
+# Copyright: (c) 2020, NS1
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
@@ -8,14 +8,13 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 
-from ansible.module_utils.ns1 import NS1ModuleBase, HAS_NS1
 ANSIBLE_METADATA = {
-    'metadata_version': '1.1',
-    'status': ['preview'],
-    'supported_by': 'community',
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
 }
 
-DOCUMENTATION = '''
+DOCUMENTATION = r"""
 ---
 module: ns1_zone
 
@@ -27,6 +26,11 @@ description:
   - Create, modify and delete zone objects.
 
 options:
+  apiKey:
+    description:
+      - Unique client api key that can be created via the NS1 portal.
+    type: str
+    required: true
   state:
     description:
       - Whether the zone should be present or not.  Use C(present) to create
@@ -65,7 +69,7 @@ options:
     required: false
     default: None
   ttl:
-   description:
+    description:
       - The SOA TTL value used in the SOA for the zone.
     type: int
     required: false
@@ -97,6 +101,37 @@ options:
     type: dict
     required: false
     default: None
+    suboptions:
+      enabled:
+        description:
+          - If true the zone is configured as a secondary zone.
+        type: bool
+        required: false
+      primary_ip:
+        description:
+          - An IPv4 address, not a hostname, for the primary DNS server for
+            the zone.
+        type: str
+        required: false
+      primary_port:
+        description:
+          - Port of primary DNS server.  Only needs to be included if DNS is
+            not running on standard port.
+        type: int
+        required: false
+      other_ips:
+        description:
+          - A list of IPv4 addresses for additional primary DNS servers for
+            the zone.
+        type: list
+        required: false
+        default: None
+      other_ports:
+        description:
+          - A list of ports for additional primary DNS servers for the zone.
+        type: list
+        required: false
+        default: None
   primary:
     description:
       - To enable slaving of your zone by third party DNS servers,
@@ -105,178 +140,321 @@ options:
     required: false
     default: None
 
-extends_documentation_fragment:
-  - ns1
+requirements:
+  - python >= 2.7
+  - ns1-python >= 0.9.19
+
+seealso:
+  - name: Documentation for NS1 API
+    description: Complete reference for the NS1 API.
+    link: https://ns1.com/api/
 
 author:
-  - 'Matthew Burtless (@mburtless)'
-'''
-EXAMPLES = '''
-  - name: create zone
-    local_action:
-      module: ns1_zone
-      apiKey: "{{ key }}"
-      name: "{{ test_zone }}"
-      state: present
-      refresh: 200
-    register: return
+  - 'NS1'
+"""
 
-  - name: delete zone
-    local_action:
-      module: ns1_zone
-      apiKey: "{{ key }}"
-      name: "{{ test_zone }}"
-      state: absent
-    register: return
-'''
+EXAMPLES = r"""
+- name: create zone
+  local_action:
+    module: ns1_zone
+    apiKey: "{{ key }}"
+    name: "{{ test_zone }}"
+    state: present
+    refresh: 200
+  register: return
 
-RETURN = '''
-'''
+- name: delete zone
+  local_action:
+    module: ns1_zone
+    apiKey: "{{ key }}"
+    name: "{{ test_zone }}"
+    state: absent
+  register: return
+"""
 
+RETURN = r"""
+"""
+
+import functools  # noqa
 
 try:
-    from ns1 import NS1, Config
+    from ansible.module_utils.ns1 import NS1ModuleBase, HAS_NS1, Decorators
+except ImportError:
+    # import via absolute path when running via pytest
+    from module_utils.ns1 import NS1ModuleBase, HAS_NS1, Decorators  # noqa
+
+try:
     from ns1.rest.errors import ResourceException
 except ImportError:
     # This is handled in NS1 module_utils
     pass
 
-ZONE_KEYS = [
-    'refresh',
-    'retry',
-    'expiry',
-    'nx_ttl',
-    'ttl',
-    'link',
-    'networks',
-    'secondary',
-    'secondary_enabled',
-    'primary_ip',
-    'primary_port',
-    'primary',
-    'primary_enabled',
-    'secondaries',
-    'dnssec'
+
+# list of params that should be treated as set during diff
+SET_PARAMS = [
+    "other_ips",
+    "other_ports",
+    "networks",
+]
+
+# list of params that should be removed before calls to API
+SANITIZED_PARAMS = [
+    "name",
+    "apiKey",
+    "endpoint",
+    "ignore_ssl",
+    "state",
 ]
 
 
 class NS1Zone(NS1ModuleBase):
+    """Represents the NS1 Zone module implementation
+    """
+
     def __init__(self):
+        """Constructor method
+        """
         self.module_arg_spec = dict(
-            name=dict(required=True, type='str'),
-            refresh=dict(required=False, type='int', default=None),
-            retry=dict(required=False, type='int', default=None),
-            expiry=dict(required=False, type='int', default=None),
-            nx_ttl=dict(required=False, type='int', default=None),
-            ttl=dict(required=False, type='int', default=None),
-            link=dict(required=False, type='str', default=None),
-            networks=dict(required=False, type='list', default=None),
-            secondary=dict(required=False, type='dict', default=None),
-            primary=dict(required=False, type='str', default=None),
-            dnssec=dict(required=False, type='bool', default=None),
+            name=dict(required=True, type="str"),
+            refresh=dict(required=False, type="int", default=None),
+            retry=dict(required=False, type="int", default=None),
+            expiry=dict(required=False, type="int", default=None),
+            nx_ttl=dict(required=False, type="int", default=None),
+            ttl=dict(required=False, type="int", default=None),
+            link=dict(required=False, type="str", default=None),
+            networks=dict(required=False, type="list", default=None),
+            secondary=dict(
+                required=False,
+                type="dict",
+                default=None,
+                options=dict(
+                    enabled=dict(type="bool", default=False),
+                    primary_ip=dict(required=False, type="str", default=None),
+                    primary_port=dict(
+                        required=False, type="int", default=None
+                    ),
+                    other_ips=dict(required=False, type="list", default=None),
+                    other_ports=dict(
+                        required=False, type="list", default=None
+                    ),
+                ),
+            ),
+            primary=dict(required=False, type="str", default=None),
+            dnssec=dict(required=False, type="bool", default=None),
             state=dict(
                 required=False,
-                type='str',
-                default='present',
-                choices=['present', 'absent'],
+                type="str",
+                default="present",
+                choices=["present", "absent"],
             ),
         )
         self.mutually_exclusive = [
-            ['link', 'networks'],
-            ['link', 'retry'],
-            ['link', 'expiry'],
-            ['link', 'nx_ttl'],
-            ['link', 'ttl'],
-            ['link', 'secondary'],
-            ['link', 'primary'],
-            ['link', 'refresh']
+            ["link", "networks"],
+            ["link", "retry"],
+            ["link", "expiry"],
+            ["link", "nx_ttl"],
+            ["link", "ttl"],
+            ["link", "secondary"],
+            ["link", "primary"],
+            ["link", "refresh"],
         ]
 
-        NS1ModuleBase.__init__(self, self.module_arg_spec,
-                               supports_check_mode=True,
-                               mutually_exclusive=self.mutually_exclusive)
-        self.exec_module()
-
-    def api_params(self):
-        params = dict(
-            (key, self.module.params.get(key))
-            for key in ZONE_KEYS
-            if self.module.params.get(key) is not None
+        NS1ModuleBase.__init__(
+            self,
+            self.module_arg_spec,
+            supports_check_mode=True,
+            mutually_exclusive=self.mutually_exclusive,
         )
-        return params
 
-    def get_zone(self):
+    def sanitize_params(self, params):
+        """Removes all Ansible module parameters from dict that have no value
+        or are listed in SANITIZED_PARAMS
+
+        :param params: Ansible module parameters
+        :type params: dict
+        :return: Sanitized dict of params
+        :rtype: dict
+        """
+        sanitized = {}
+        for k, v in params.items():
+            if isinstance(v, dict):
+                v = self.sanitize_params(v)
+            if v is not None and k not in SANITIZED_PARAMS:
+                sanitized[k] = v
+        return sanitized
+
+    def get_zone(self, name):
+        """Retrieves a zone from NS1. If no name is given or zone does not
+        exist, will return None.
+
+        :param name: Name of the zone to retrieve
+        :type name: str, optional
+        :return: zone object returned by NS1
+        :rtype: ns1.zones.Zone
+        """
         zone = None
-        try:
-            zone = self.ns1.loadZone(self.module.params.get('name'))
-        except ResourceException as re:
-            if re.response.code != 404:
-                module.fail_json(
-                    msg="error code %s - %s " % (re.response.code, re.message)
-                )
-                zone = None
+        if name:
+            try:
+                zone = self.ns1.loadZone(name)
+            except ResourceException as re:
+                if re.response.code != 404:
+                    self.module.fail_json(
+                        msg="error code %s - %s "
+                        % (re.response.code, re.message)
+                    )
+                    zone = None
         return zone
 
-    def update(self, zone):
-        changed = False
-        args = {}
+    def compare_params(self, have, want):
+        """Performs deep comparison of two sets of Ansible parameters. Returns
+        values from want that differ from have.
 
-        for key in ZONE_KEYS:
-            if (
-                    self.module.params.get(key) is not None and
-                    (
-                        not zone.data or
-                        key not in zone.data or
-                        self.module.params.get(key) != zone.data[key]
-                    )
-            ):
-                changed = True
-                args[key] = self.module.params.get(key)
+        :param have: Existing set of parameters
+        :type have: dict
+        :param want: Desired end state of parameters
+        :type want: dict
+        :return: Parameters in want that differ from have
+        :rtype: dict
+        """
+        diff = {}
+        for param, wanted_val in want.items():
+            if param not in have:
+                diff[param] = wanted_val
+                continue
+            if isinstance(wanted_val, dict):
+                subparam_diff = self.compare_params(have[param], wanted_val)
+                if subparam_diff:
+                    diff[param] = subparam_diff
+            elif isinstance(wanted_val, list) and param in SET_PARAMS:
+                if set(have[param]) != set(wanted_val):
+                    diff[param] = wanted_val
+            elif have[param] != wanted_val:
+                diff[param] = wanted_val
+        return diff
 
-        if self.module.check_mode:
-            # check mode short circuit before update
-            self.module.exit_json(changed=changed)
+    @Decorators.skip_in_check_mode
+    def update(self, zone, args):
+        """Updates the zone in NS1 with values from args
 
-        if changed:
-            # update only if changed
-            zone = zone.update(errback=self.errback_generator(), **args)
+        :param zone: Zone object of existing zone returned by NS1
+        :type zone: dict
+        :param args: Dict of args and values to update the zone with
+        :type args: dict
+        :return: The updated zone object returned by NS1
+        :rtype: dict
+        """
+        return zone.update(errback=self.errback_generator(), **args)
 
-        self.module.exit_json(changed=changed, id=zone['id'], data=zone.data)
+    @Decorators.skip_in_check_mode
+    def create(self, args):
+        """Creates a zone in NS1 with the given args.
+
+        :param args: Dict of args and values to update the zone with
+        :type args: dict
+        :return: [description]
+        :rtype: [type]
+        """
+        return self.ns1.createZone(
+            self.module.params.get("name"),
+            errback=self.errback_generator(),
+            **args
+        )
+
+    @Decorators.skip_in_check_mode
+    def delete(self, zone):
+        """Deletes a zone in NS1.
+
+        :param zone: Zone object of existing zone returned by NS1
+        :type zone: dict
+        """
+        zone.delete(errback=self.errback_generator())
 
     def exec_module(self):
-        state = self.module.params.get('state')
-        zone = self.get_zone()
+        """Main execution method of module.  Creates, updates or deletes a
+        zone based on Ansible parameters.
 
-        # zone found
+        :return: Results of module execution
+        :rtype: dict
+        """
+        changed = False
+        state = self.module.params.get("state")
+        zone = self.get_zone(self.module.params.get("name"))
+        if state == "present":
+            changed, zone = self.present(zone)
+        if state == "absent":
+            changed = self.absent(zone)
+        return self.build_result(changed, zone)
+
+    def present(self, zone):
+        """Handles use case where desired state of zone is present.
+        If zone is provided, it is updated with params from Ansible that
+        differ from existing values. If zone is not provided, a new zone will
+        be created with params from Ansible.
+
+        :param zone: Zone object of existing zone returned by NS1
+        :type zone: dict, optional
+        :return: Tuple in which first value reflects whether or not a change
+        occured and second value is new or updated zone object
+        :rtype: tuple(bool, dict)
+        """
+        want = self.sanitize_params(self.module.params)
         if zone:
-            if state == "absent":
-                if self.module.check_mode:
-                    # short circut in check mode
-                    self.module.exit_json(changed=True)
+            return self.update_on_diff(zone, want)
+        return True, self.create(want)
 
-                zone.delete(errback=self.errback_generator())
-                self.module.exit_json(changed=True)
-            else:
-                self.update(zone)
-        else:
-            if state == "absent":
-                self.module.exit_json(changed=False)
-            else:
-                if self.module.check_mode:
-                    # short circuit in check mode
-                    self.module.exit_json(changed=True)
-                zone = self.ns1.createZone(
-                    self.module.params.get('name'),
-                    errback=self.errback_generator(),
-                    **self.api_params()
-                )
-                self.module.exit_json(
-                    changed=True, id=zone['id'], data=zone.data)
+    def update_on_diff(self, zone, want):
+        """triggers update of zone if diff between zone and desired state in want
+
+        :param zone: Zone object of existing zone returned by NS1
+        :type zone: dict
+        :param want: Desired state of zone
+        :type want: dict
+        :return: Tuple in which first value reflects whether or not a change
+        occured and second value is new or updated zone object
+        :rtype: tuple(bool, dict)
+        """
+        diff = self.compare_params(zone.data, want)
+        if diff:
+            return True, self.update(zone, diff)
+        return False, zone
+
+    def absent(self, zone):
+        """Handles use case where desired state of zone is absent.
+        If zone is provided, it is deleted.
+
+        :param zone: Zone object of existing zone returned by NS1
+        :type zone: dict, optional
+        :return: Whether or not a change occured
+        :rtype: bool
+        """
+        if zone:
+            self.delete(zone)
+            return True
+
+        return False
+
+    def build_result(self, changed, zone):
+        """Builds dict of results from module execution to pass to module.exit_json()
+
+        :param changed: Whether or not a change occured
+        :type changed: bool
+        :param zone: Zone object returned by NS1 of new or updated zone
+        :type zone: dict
+        :return: Results of module execution
+        :rtype: dict
+        """
+        result = {"changed": changed}
+        if zone and not self.module.check_mode:
+            result["id"] = zone["id"]
+            result["zone"] = zone.data
+        return result
 
 
 def main():
-    NS1Zone()
+    z = NS1Zone()
+    result = z.exec_module()
+    z.module.exit_json(**result)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
