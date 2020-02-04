@@ -126,6 +126,7 @@
             - secondary_zone is changed
             - secondary_zone.zone.secondary.enabled == True
             - secondary_zone.zone.secondary.tsig.enabled == True
+
       - name: Disable secondary zone
         local_action:
           module: ns1_zone
