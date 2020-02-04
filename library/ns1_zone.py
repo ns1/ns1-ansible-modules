@@ -132,6 +132,36 @@ options:
         type: list
         required: false
         default: None
+      tsig:
+        description:
+          - Used to configure TSIG authentication on a secondary zone
+        type: dict
+        required: False
+        default: None
+        suboptions:
+          enabled:
+            description:
+            - If true TSIG authentication is enabled for the secondary zone.
+            type: bool
+            required: false
+          hash:
+            description:
+            - The type of hash to use (i.e. hmac-sha256).
+            - Required if TSIG is enabled.
+            type: str
+            required: false
+          key:
+            description:
+            - The pre-shared TSIG key.
+            - Required if TSIG is enabled.
+            type: str
+            required: false
+          name:
+            description:
+            - The name of the key.
+            - Required if TSIG is enabled.
+            type: str
+            required: false
   primary:
     description:
       - To enable slaving of your zone by third party DNS servers,
@@ -199,7 +229,6 @@ SET_PARAMS = [
 
 # list of params that should be removed before calls to API
 SANITIZED_PARAMS = [
-    "name",
     "apiKey",
     "endpoint",
     "ignore_ssl",
@@ -237,6 +266,17 @@ class NS1Zone(NS1ModuleBase):
                     other_ports=dict(
                         required=False, type="list", default=None
                     ),
+                    tsig=dict(
+                        required=False,
+                        type="dict",
+                        default=None,
+                        options=dict(
+                            enabled=dict(type="bool", default=False),
+                            hash=dict(type="str", default=None),
+                            key=dict(type="str", default=None),
+                            name=dict(type="str", default=None),
+                        ),
+                    ),
                 ),
             ),
             primary=dict(required=False, type="str", default=None),
@@ -266,7 +306,7 @@ class NS1Zone(NS1ModuleBase):
             mutually_exclusive=self.mutually_exclusive,
         )
 
-    def sanitize_params(self, params):
+    def sanitize_params(self, params, i=0):
         """Removes all Ansible module parameters from dict that have no value
         or are listed in SANITIZED_PARAMS
 
@@ -278,8 +318,13 @@ class NS1Zone(NS1ModuleBase):
         sanitized = {}
         for k, v in params.items():
             if isinstance(v, dict):
-                v = self.sanitize_params(v)
+                i += 1
+                v = self.sanitize_params(v, i)
             if v is not None and k not in SANITIZED_PARAMS:
+                # Skip adding Name param, but include any Name subparams
+                # This is an ansible param, not something NS1 needs
+                if i == 0 and k == "name":
+                    continue
                 sanitized[k] = v
         return sanitized
 
