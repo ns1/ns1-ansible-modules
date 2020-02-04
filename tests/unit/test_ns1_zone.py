@@ -49,6 +49,22 @@ def test_module_fail_when_required_args_missing():
             id="updated_dict_param",
         ),
         pytest.param(
+            {
+                "secondary": {
+                    "enabled": True,
+                    "tsig": {"enabled": True}
+                }
+            },
+            {
+                "secondary": {
+                    "enabled": True,
+                    "tsig": {"enabled": True, "name": "foo"},
+                }
+            },
+            {"secondary": {"tsig": {"name": "foo"}}},
+            id="updated_nested_dict_param",
+        ),
+        pytest.param(
             {"networks": [1, 2, 3]},
             {"networks": []},
             {"networks": []},
@@ -141,6 +157,22 @@ def test_check_mode(mock_zone_update, ns1_config, check_mode):
             {"secondary": {"enabled": True, "primary_ip": "1.1.1.1"}},
             {"secondary": {"enabled": True, "primary_ip": "1.1.1.1"}},
             id="suboption",
+        ),
+        pytest.param(
+            {
+                "name": "foo",
+                "secondary": {
+                    "enabled": True,
+                    "tsig": {"enabled": True, "name": "key_name"},
+                },
+            },
+            {
+                "secondary": {
+                    "enabled": True,
+                    "tsig": {"enabled": True, "name": "key_name"},
+                }
+            },
+            id="nested_suboption",
         ),
         pytest.param(
             {"secondary": {"enabled": True, "primary_ip": None}},

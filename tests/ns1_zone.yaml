@@ -6,15 +6,19 @@
         local_action:
           module: ns1_zone
           apiKey: "{{ ns1_token }}"
-          name: "{{ test_zone }}"
+          name: "{{ item }}"
           state: absent
+        loop:
+          - "{{ test_zone }}"
+          - "linked-{{ test_zone }}"
+          - "secondary-{{ test_zone }}"
         register: zone_setup
 
       - name: Verify setup
         assert:
           that:
             - zone_setup is success
-      
+
       - name: Test zone creation
         local_action:
           module: ns1_zone
@@ -92,7 +96,7 @@
           that:
             - linked_zone is changed
             - linked_zone.zone.link == "{{ test_zone }}"
- 
+
       - name: Delete linked zone
         local_action:
           module: ns1_zone
@@ -108,6 +112,11 @@
           secondary:
             enabled: True
             primary_ip: "1.1.1.1"
+            tsig:
+              enabled: true
+              hash: "hmac-256"
+              name: "testkey"
+              key: "fookey"
           state: present
         register: secondary_zone
 
@@ -116,7 +125,7 @@
           that:
             - secondary_zone is changed
             - secondary_zone.zone.secondary.enabled == True
-
+            - secondary_zone.zone.secondary.tsig.enabled == True
       - name: Disable secondary zone
         local_action:
           module: ns1_zone
