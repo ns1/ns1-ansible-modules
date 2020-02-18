@@ -185,6 +185,30 @@
             - a_meta_update.data.answers[0].answer[0] == "192.168.2.1"
             - a_meta_update.data.answers | length == 1
 
+      - name: Test meta feed
+        local_action:
+          module: ns1_record
+          apiKey: "{{ ns1_token }}"
+          name: "{{ test_record }}"
+          zone: "{{ test_zone }}"
+          record_mode: purge
+          state: present
+          type: A
+          answers:
+            - answer:
+                - 192.168.2.1
+              meta:
+                up:
+                  feed: 'abcdefghijklmnop'
+        register: a_meta_feed
+
+      - name: Verify meta feed
+        assert:
+          that:
+            - a_meta_feed is changed
+            - a_meta_feed.data.answers[0].answer[0] == "192.168.2.1"
+            - a_meta_feed.data.answers | length == 1
+
       - name: Test answer purge
         local_action:
           module: ns1_record

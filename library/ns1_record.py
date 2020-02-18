@@ -227,7 +227,7 @@ EXAMPLES = '''
             - 192.168.1.3
           meta:
             up:
-              feed: {{ datasources.datasources.datadog.feeds[0].id }}
+              feed: {{ datasources.datadog.feeds[0].id }}
 '''
 
 RETURN = '''
