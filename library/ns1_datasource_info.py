@@ -15,7 +15,7 @@ ANSIBLE_METADATA = {
 }
 
 DOCUMENTATION = '''
-module: ns1_datasources
+module: ns1_datasource_info
 
 short_description: List available datasources and their feeds.
 
@@ -30,12 +30,12 @@ options: None
 
 EXAMPLES = '''
 - name: Register the list of datasources
-  ns1_datasource
+  ns1_datasource_info
     apiKey: "{{ ns1_token }}"
-  register: datasources
+  register: datasource_info
 - name: Reference a datafeed by ID, with a variable
   debug:
-    var: datasources.datadog.feeds[0].id
+    var: datasource_info.datasources.datadog.feeds[0].id
 
 '''
 
@@ -74,7 +74,7 @@ class NS1DataSources(NS1ModuleBase):
 
     def exec_module(self):
         datasources = self.get_datasources()
-        self.module.exit_json(**datasources)
+        self.module.exit_json(datasources=datasources)
 
 
 def main():

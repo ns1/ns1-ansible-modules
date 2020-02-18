@@ -3,7 +3,7 @@ import pytest
 from collections import namedtuple
 
 from .common import FakeAnsibleModule, AnsibleFailJson
-from library import ns1_datasource
+from library import ns1_datasource_info
 
 try:  # Python 3.3 +
     from unittest.mock import patch
@@ -31,7 +31,7 @@ def test_get_datasources(mock_source_list, ns1_config):
         {"name": "one"}, {"name": "two"}, {"name": "three"}
     ]
 
-    ds = ns1_datasource.NS1DataSources()
+    ds = ns1_datasource_info.NS1DataSources()
     datasources = ds.get_datasources()
 
     mock_source_list.assert_called_once_with()
@@ -54,7 +54,7 @@ def test_get_datasources_failure(mock_source_list, ns1_config):
         "fail", response=Response(500)
     )
 
-    ds = ns1_datasource.NS1DataSources()
+    ds = ns1_datasource_info.NS1DataSources()
 
     with pytest.raises(AnsibleFailJson) as ex:
         ds.get_datasources()

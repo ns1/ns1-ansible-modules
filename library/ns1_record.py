@@ -212,9 +212,9 @@ EXAMPLES = '''
           - mail1.example.com
 
 - name: Register list of datasources
-  ns1_datasource
+  ns1_datasource_info
     apiKey: "{{ ns1_token }}"
-  register: datasources
+  register: datasource_info
 - name: An answer with a connected data feed
   ns1_record:
     apiKey: qACMD09OJXBxT7XOuRs8
@@ -227,7 +227,7 @@ EXAMPLES = '''
             - 192.168.1.3
           meta:
             up:
-              feed: {{ datasources.datadog.feeds[0].id }}
+              feed: {{ datasource_info.datasources.datadog.feeds[0].id }}
 '''
 
 RETURN = '''
