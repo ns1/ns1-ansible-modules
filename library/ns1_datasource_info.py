@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright: (c) 2019, Matthew Burtless <mburtless@ns1.com>
+# Copyright: (c) 2020, NS1
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
@@ -25,7 +25,22 @@ description:
   - List available datasources and their feeds. Use this to reference feeds
     in e.g. ns1_record answer meta.
 
-options: None
+options:
+  apiKey:
+    description:
+      - Unique client api key that can be created via the NS1 portal.
+    type: str
+    required: true
+  endpoint:
+    description:
+      - NS1 API endpoint. Defaults to https://api.nsone.net/v1/
+    type: str
+    required: false
+  ignore_ssl:
+    description:
+      - Whether to ignore SSL errors. Defaults to false
+    type: bool
+    required: false
 '''
 
 EXAMPLES = '''

@@ -26,6 +26,21 @@ description:
   - Create, modify and delete record objects within an existing zone.
 
 options:
+  apiKey:
+    description:
+      - Unique client api key that can be created via the NS1 portal.
+    type: str
+    required: true
+  endpoint:
+    description:
+      - NS1 API endpoint. Defaults to https://api.nsone.net/v1/
+    type: str
+    required: false
+  ignore_ssl:
+    description:
+      - Whether to ignore SSL errors. Defaults to false
+    type: bool
+    required: false
   state:
     description:
       - Whether the record should be present or not.  Use C(present) to create

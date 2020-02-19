@@ -29,7 +29,7 @@ except ImportError:
 NS1_COMMON_ARGS = dict(
     apiKey=dict(required=True, no_log=True),
     endpoint=dict(required=False, type="str", default=None),
-    ignore_ssl=dict(required=False, type="bool", default=None),
+    ignore_ssl=dict(required=False, type="bool", default=False),
 )
 
 
@@ -63,6 +63,9 @@ class NS1ModuleBase(object):
             self.config["endpoint"] = self.module.params["endpoint"]
         if self.module.params["ignore_ssl"]:
             self.config["ignore-ssl-errors"] = self.module.params["ignore_ssl"]
+        del self.module.params["apiKey"]
+        del self.module.params["endpoint"]
+        del self.module.params["ignore_ssl"]
         self.ns1 = NS1(config=self.config)
 
     def errback_generator(self):
