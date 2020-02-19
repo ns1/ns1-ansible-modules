@@ -146,7 +146,7 @@ options:
         description:
           - Used to configure TSIG authentication on a secondary zone
         type: dict
-        required: False
+        required: false
         default: None
         suboptions:
           enabled:
@@ -176,9 +176,35 @@ options:
     description:
       - To enable slaving of your zone by third party DNS servers,
         you must include a primary object.
-    type: str
+    type: dict
     required: false
     default: None
+    suboptions:
+      enabled:
+        description:
+          - If true the zone the zone is enabled for outgoing zone transfers.
+        type: bool
+        required: false
+      secondaries:
+        description:
+          - Collection of secondary DNS servers that slave off this zone.
+        type: list
+        required: false
+        suboptions:
+          ip:
+            description:
+              - The IPv4 address of the secondary DNS server.
+            type: str
+          port:
+            description:
+              - The port on the secondary server to send NOTIFY messages
+            type: int
+            required: false
+          notify:
+            description:
+              - Whether or not NS1 should send NOTIFY messages to the host
+                when the zone changes
+            type: bool
 
 requirements:
   - python >= 2.7
@@ -278,7 +304,7 @@ class NS1Zone(NS1ModuleBase):
                         type="dict",
                         default=None,
                         options=dict(
-                            enabled=dict(type="bool", default=False),
+                            enabled=dict(type="bool", default=None),
                             hash=dict(type="str", default=None),
                             key=dict(type="str", default=None),
                             name=dict(type="str", default=None),
@@ -286,7 +312,31 @@ class NS1Zone(NS1ModuleBase):
                     ),
                 ),
             ),
-            primary=dict(required=False, type="str", default=None),
+            primary=dict(
+                required=False,
+                type="dict",
+                default=None,
+                options=dict(
+                    enabled=dict(type="bool", default=None),
+                    secondaries=dict(
+                        type="list",
+                        default=None,
+                        options=dict(
+                            ip=dict(type="str", default=None),
+                            port=dict(
+                                required=False,
+                                type="int",
+                                default=None
+                            ),
+                            notify=dict(
+                                required=False,
+                                type="bool",
+                                default=None
+                            ),
+                        )
+                    ),
+                ),
+            ),
             dnssec=dict(required=False, type="bool", default=None),
             state=dict(
                 required=False,
