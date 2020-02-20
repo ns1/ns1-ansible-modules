@@ -324,16 +324,12 @@ class NS1Zone(NS1ModuleBase):
                         options=dict(
                             ip=dict(type="str", default=None),
                             port=dict(
-                                required=False,
-                                type="int",
-                                default=None
+                                required=False, type="int", default=None
                             ),
                             notify=dict(
-                                required=False,
-                                type="bool",
-                                default=None
+                                required=False, type="bool", default=None
                             ),
-                        )
+                        ),
                     ),
                 ),
             ),
@@ -450,7 +446,9 @@ class NS1Zone(NS1ModuleBase):
             have_secondaries = have["primary"].get("secondaries")
             want_secondaries = want["primary"].get("secondaries")
             # if no difference in values, remove secondaries from diff results
-            if not self.diff_in_secondaries(have_secondaries, want_secondaries):
+            if not self.diff_in_secondaries(
+                have_secondaries, want_secondaries
+            ):
                 diff["primary"].pop("secondaries")
                 # if secondaries was only key in primary, remove primary
                 if len(diff["primary"]) == 0:
@@ -495,7 +493,7 @@ class NS1Zone(NS1ModuleBase):
         """
         secondaries_hash = {}
         for secondary in secondaries:
-            socket = '{0}:{1}'.format(secondary["ip"], secondary["port"])
+            socket = "{0}:{1}".format(secondary["ip"], secondary["port"])
             secondaries_hash[socket] = secondary
         return secondaries_hash
 
