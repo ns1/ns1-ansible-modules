@@ -173,7 +173,7 @@ author:
 EXAMPLES = '''
 - name: Ensure an A record with two answers, metadata and filter chain
   ns1_record:
-    apiKey: qACMD09OJXBxT7XOuRs8
+    apiKey: "{{ ns1_token }}"
     name: www
     zone: test.com
     state: present
@@ -193,7 +193,7 @@ EXAMPLES = '''
 
 - name: Ensure an A record, appending new answer to existing
   ns1_record:
-    apiKey: qACMD09OJXBxT7XOuRs8
+    apiKey: "{{ ns1_token }}"
     name: www
     zone: test.com
     record_mode: append
@@ -207,7 +207,7 @@ EXAMPLES = '''
 
 - name: Delete an A record
   ns1_record:
-    apiKey: qACMD09OJXBxT7XOuRs8
+    apiKey: "{{ ns1_token }}"
     name: www
     zone: test.com
     state: absent
@@ -216,7 +216,7 @@ EXAMPLES = '''
 
 - name: Ensure an MX record at apex of zone with a single answer
   ns1_record:
-    apiKey: qACMD09OJXBxT7XOuRs8
+    apiKey: "{{ ns1_token }}"
     name: test.com
     zone: test.com
     state: present
@@ -232,7 +232,7 @@ EXAMPLES = '''
   register: datasource_info
 - name: An answer with a connected data feed
   ns1_record:
-    apiKey: qACMD09OJXBxT7XOuRs8
+    apiKey: "{{ ns1_token }}"
     name: test.com
     zone: test.com
     state: present

@@ -26,10 +26,11 @@ except ImportError:
     HAS_NS1 = False
 
 
+# defaults of None passthrough and let the SDK set the default value
 NS1_COMMON_ARGS = dict(
     apiKey=dict(required=True, no_log=True),
     endpoint=dict(required=False, type="str", default=None),
-    ignore_ssl=dict(required=False, type="bool", default=False),
+    ignore_ssl=dict(required=False, type="bool", default=None),
 )
 
 
@@ -54,6 +55,13 @@ class NS1ModuleBase(object):
         if not HAS_NS1:
             self.module.fail_json(msg=missing_required_lib("ns1-python"))
         self._build_ns1()
+        self._strip_common_params()
+
+    def errback_generator(self):
+        def errback(args):
+            self.module.fail_json(msg="%s - %s" % (args[0], args[1]))
+
+        return errback
 
     def _build_ns1(self):
         self.config = Config()
@@ -63,16 +71,14 @@ class NS1ModuleBase(object):
             self.config["endpoint"] = self.module.params["endpoint"]
         if self.module.params["ignore_ssl"]:
             self.config["ignore-ssl-errors"] = self.module.params["ignore_ssl"]
-        del self.module.params["apiKey"]
-        del self.module.params["endpoint"]
-        del self.module.params["ignore_ssl"]
         self.ns1 = NS1(config=self.config)
 
-    def errback_generator(self):
-        def errback(args):
-            self.module.fail_json(msg="%s - %s" % (args[0], args[1]))
-
-        return errback
+    def _strip_common_params(self):
+        """Remove the params we've handled, so the rest of the module doesn't
+        have to worry about them.
+        """
+        for key in NS1_COMMON_ARGS:
+            del self.module.params[key]
 
 
 class Decorators(object):

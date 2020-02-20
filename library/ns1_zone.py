@@ -197,8 +197,8 @@ EXAMPLES = r"""
 - name: create zone
   local_action:
     module: ns1_zone
-    apiKey: "{{ key }}"
-    name: "{{ test_zone }}"
+    apiKey: "{{ ns1_token }}"
+    name: test.com
     state: present
     refresh: 200
   register: return
@@ -206,8 +206,8 @@ EXAMPLES = r"""
 - name: delete zone
   local_action:
     module: ns1_zone
-    apiKey: "{{ key }}"
-    name: "{{ test_zone }}"
+    apiKey: "{{ ns1_token }}"
+    name: test.com
     state: absent
   register: return
 """
