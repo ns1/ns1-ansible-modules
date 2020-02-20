@@ -407,7 +407,7 @@ class NS1Zone(NS1ModuleBase):
                     zone = None
         return zone
 
-    def compare_params(self, have, want):
+    def diff_params(self, have, want):
         """Performs deep comparison of two sets of Ansible parameters. Returns
         values from want that differ from have.
 
@@ -424,7 +424,7 @@ class NS1Zone(NS1ModuleBase):
                 diff[param] = wanted_val
                 continue
             if isinstance(wanted_val, dict):
-                subparam_diff = self.compare_params(have[param], wanted_val)
+                subparam_diff = self.diff_params(have[param], wanted_val)
                 if subparam_diff:
                     diff[param] = subparam_diff
             elif isinstance(wanted_val, list) and param in SET_PARAMS:
@@ -433,6 +433,71 @@ class NS1Zone(NS1ModuleBase):
             elif have[param] != wanted_val:
                 diff[param] = wanted_val
         return diff
+
+    def get_changed_params(self, have, want):
+        """Gets Ansible params in want that have changed from have
+
+        :param have: Existing set of parameters
+        :type have: dict
+        :param want: Desired end state of parameters
+        :type want: dict
+        :return: Parameters in want that differ from have
+        :rtype: dict
+        """
+        diff = self.diff_params(have, want)
+        # perform deep comparison of secondaries
+        if "primary" in have and "primary" in diff:
+            have_secondaries = have["primary"].get("secondaries")
+            want_secondaries = want["primary"].get("secondaries")
+            # if no difference in values, remove secondaries from diff results
+            if not self.diff_in_secondaries(have_secondaries, want_secondaries):
+                diff["primary"].pop("secondaries")
+                # if secondaries was only key in primary, remove primary
+                if len(diff["primary"]) == 0:
+                    diff.pop("primary")
+        return diff
+
+    def diff_in_secondaries(self, have_secondaries, want_secondaries):
+        """Performs deep comparison of two lists of secondaries, ignoring order.
+
+        :param have_secondaries: Existing secondaries list
+        :type have_secondaries: list
+        :param want_secondaries: Desired end state of secondaries list
+        :type want_secondaries: list
+        :return: Whether or not there is a difference between the lists
+        :rtype: bool
+        """
+        if want_secondaries is None:
+            # if no secondaries provided in params, no change
+            return False
+        elif have_secondaries is None:
+            # if no secondaries were already set, will be a change
+            return True
+        elif len(want_secondaries) != len(have_secondaries):
+            return True
+
+        have_hash = self.convert_secondaries_to_hash(have_secondaries)
+        want_hash = self.convert_secondaries_to_hash(want_secondaries)
+        diff = self.diff_params(have_hash, want_hash)
+        if diff:
+            return True
+
+        return False
+
+    def convert_secondaries_to_hash(self, secondaries):
+        """Converts a secondaries list to hash. Keys are a concatenated string
+        of IP and Port fields.
+
+        :param secondaries: List of secondary dicts
+        :type secondaries: list
+        :return: Hash of secondary dicts
+        :rtype: dict
+        """
+        secondaries_hash = {}
+        for secondary in secondaries:
+            socket = '{0}:{1}'.format(secondary["ip"], secondary["port"])
+            secondaries_hash[socket] = secondary
+        return secondaries_hash
 
     @Decorators.skip_in_check_mode
     def update(self, zone, args):
@@ -485,6 +550,7 @@ class NS1Zone(NS1ModuleBase):
             changed, zone = self.present(zone)
         if state == "absent":
             changed = self.absent(zone)
+            zone = {}
         return self.build_result(changed, zone)
 
     def present(self, zone):
@@ -501,10 +567,10 @@ class NS1Zone(NS1ModuleBase):
         """
         want = self.sanitize_params(self.module.params)
         if zone:
-            return self.update_on_diff(zone, want)
+            return self.update_on_change(zone, want)
         return True, self.create(want)
 
-    def update_on_diff(self, zone, want):
+    def update_on_change(self, zone, want):
         """triggers update of zone if diff between zone and desired state in want
 
         :param zone: Zone object of existing zone returned by NS1
@@ -515,9 +581,9 @@ class NS1Zone(NS1ModuleBase):
         occured and second value is new or updated zone object
         :rtype: tuple(bool, dict)
         """
-        diff = self.compare_params(zone.data, want)
-        if diff:
-            return True, self.update(zone, diff)
+        changed_params = self.get_changed_params(zone.data, want)
+        if changed_params:
+            return True, self.update(zone, changed_params)
         return False, zone
 
     def absent(self, zone):
