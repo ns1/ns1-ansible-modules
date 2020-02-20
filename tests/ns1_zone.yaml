@@ -232,12 +232,12 @@
           primary:
             enabled: true
             secondaries:
-              - ip: "1.1.1.1"
-                port: 53
-                notify: false
               - ip: "2.2.2.2"
                 port: 8080
                 notify: true
+              - ip: "1.1.1.1"
+                port: 53
+                notify: false
           state: present
         register: primary_zone_idempotent
 
@@ -245,6 +245,23 @@
         assert:
           that:
             - primary_zone_idempotent is not changed
+
+      - name: Delete secondaries
+        local_action:
+          module: ns1_zone
+          apiKey: "{{ ns1_token }}"
+          name: "primary-{{ test_zone }}"
+          primary:
+            enabled: true
+            secondaries: []
+          state: present
+        register: primary_zone_no_secondaries
+
+      - name: Verify secondaries deleted
+        assert:
+          that:
+            - primary_zone_no_secondaries is changed
+            - primary_zone_no_secondaries.zone.primary.secondaries | length == 0
 
       - name: Delete primary zone
         local_action:
