@@ -31,6 +31,16 @@ options:
       - Unique client api key that can be created via the NS1 portal.
     type: str
     required: true
+  endpoint:
+    description:
+      - NS1 API endpoint. Defaults to https://api.nsone.net/v1/
+    type: str
+    required: false
+  ignore_ssl:
+    description:
+      - Whether to ignore SSL errors. Defaults to false
+    type: bool
+    required: false
   state:
     description:
       - Whether the zone should be present or not.  Use C(present) to create
@@ -187,8 +197,8 @@ EXAMPLES = r"""
 - name: create zone
   local_action:
     module: ns1_zone
-    apiKey: "{{ key }}"
-    name: "{{ test_zone }}"
+    apiKey: "{{ ns1_token }}"
+    name: test.com
     state: present
     refresh: 200
   register: return
@@ -196,8 +206,8 @@ EXAMPLES = r"""
 - name: delete zone
   local_action:
     module: ns1_zone
-    apiKey: "{{ key }}"
-    name: "{{ test_zone }}"
+    apiKey: "{{ ns1_token }}"
+    name: test.com
     state: absent
   register: return
 """
@@ -229,9 +239,6 @@ SET_PARAMS = [
 
 # list of params that should be removed before calls to API
 SANITIZED_PARAMS = [
-    "apiKey",
-    "endpoint",
-    "ignore_ssl",
     "state",
 ]
 

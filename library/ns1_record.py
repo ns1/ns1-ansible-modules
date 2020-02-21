@@ -26,6 +26,21 @@ description:
   - Create, modify and delete record objects within an existing zone.
 
 options:
+  apiKey:
+    description:
+      - Unique client api key that can be created via the NS1 portal.
+    type: str
+    required: true
+  endpoint:
+    description:
+      - NS1 API endpoint. Defaults to https://api.nsone.net/v1/
+    type: str
+    required: false
+  ignore_ssl:
+    description:
+      - Whether to ignore SSL errors. Defaults to false
+    type: bool
+    required: false
   state:
     description:
       - Whether the record should be present or not.  Use C(present) to create
@@ -158,7 +173,7 @@ author:
 EXAMPLES = '''
 - name: Ensure an A record with two answers, metadata and filter chain
   ns1_record:
-    apiKey: qACMD09OJXBxT7XOuRs8
+    apiKey: "{{ ns1_token }}"
     name: www
     zone: test.com
     state: present
@@ -178,7 +193,7 @@ EXAMPLES = '''
 
 - name: Ensure an A record, appending new answer to existing
   ns1_record:
-    apiKey: qACMD09OJXBxT7XOuRs8
+    apiKey: "{{ ns1_token }}"
     name: www
     zone: test.com
     record_mode: append
@@ -192,7 +207,7 @@ EXAMPLES = '''
 
 - name: Delete an A record
   ns1_record:
-    apiKey: qACMD09OJXBxT7XOuRs8
+    apiKey: "{{ ns1_token }}"
     name: www
     zone: test.com
     state: absent
@@ -201,7 +216,7 @@ EXAMPLES = '''
 
 - name: Ensure an MX record at apex of zone with a single answer
   ns1_record:
-    apiKey: qACMD09OJXBxT7XOuRs8
+    apiKey: "{{ ns1_token }}"
     name: test.com
     zone: test.com
     state: present
@@ -210,17 +225,38 @@ EXAMPLES = '''
       - answer:
           - 5
           - mail1.example.com
+
+- name: Register list of datasources
+  ns1_datasource_info
+    apiKey: "{{ ns1_token }}"
+  register: datasource_info
+- name: An answer with a connected data feed
+  ns1_record:
+    apiKey: "{{ ns1_token }}"
+    name: test.com
+    zone: test.com
+    state: present
+    type: A
+    answers:
+        - answer:
+            - 192.168.1.3
+          meta:
+            up:
+              feed: {{ datasource_info.datasources.datadog.feeds[0].id }}
 '''
 
 RETURN = '''
 '''
 
-import copy
-
-from ansible.module_utils.ns1 import NS1ModuleBase, HAS_NS1
+import copy  # noqa
 
 try:
-    from ns1 import NS1, Config
+    from ansible.module_utils.ns1 import NS1ModuleBase
+except ImportError:
+    # import via absolute path when running via pytest
+    from module_utils.ns1 import NS1ModuleBase  # noqa
+
+try:
     from ns1.rest.errors import ResourceException
 except ImportError:
     # This is handled in NS1 module_utils
@@ -298,7 +334,6 @@ class NS1Record(NS1ModuleBase):
         )
 
         NS1ModuleBase.__init__(self, self.module_arg_spec, supports_check_mode=True)
-        self.exec_module()
 
     def filter_empty_subparams(self, param_name):
         param = self.module.params.get(param_name)
@@ -325,18 +360,28 @@ class NS1Record(NS1ModuleBase):
         )
         return params
 
-    def remove_id(self, d):
-        if isinstance(d, dict):
-            if 'id' in d:
-                del d['id']
-            for key, val in d.items():
-                if isinstance(val, (dict, list)):
-                    self.remove_id(val)
-        if isinstance(d, list):
-            for i in d:
-                if isinstance(i, (dict, list)):
-                    self.remove_id(i)
-        return d
+    def sanitize_record(self, record):
+        """
+        remove fields from the API-returned record that we don't want to
+        pass back, or consider when diffing
+        """
+        def remove_ids(d):
+            if isinstance(d, dict):
+                if 'id' in d:
+                    del d['id']
+                for key, val in d.items():
+                    if isinstance(val, (dict, list)):
+                        remove_ids(val)
+            if isinstance(d, list):
+                for i in d:
+                    if isinstance(i, (dict, list)):
+                        remove_ids(i)
+            return d
+
+        record = remove_ids(record)
+        for answer in record['answers']:
+            answer.pop('feeds', None)
+        return record
 
     def get_zone(self):
         to_return = None
@@ -376,7 +421,7 @@ class NS1Record(NS1ModuleBase):
 
     def update(self, zone, record):
         # Clean copy of record to preserve IDs for response if no update required
-        record_data = self.remove_id(copy.deepcopy(record.data))
+        record_data = self.sanitize_record(copy.deepcopy(record.data))
         changed = False
         args = {}
 
@@ -412,6 +457,10 @@ class NS1Record(NS1ModuleBase):
     def exec_module(self):
         state = self.module.params.get('state')
         zone = self.get_zone()
+        if zone is None:
+            self.module.fail_json(msg='zone "{}" not found'.format(
+                self.module.params.get('zone')
+            ))
         record = self.get_record(zone)
 
         # record found
@@ -447,7 +496,9 @@ class NS1Record(NS1ModuleBase):
 
 
 def main():
-    NS1Record()
+    r = NS1Record()
+    result = r.exec_module()
+    r.module.exit_json(**result)
 
 
 if __name__ == '__main__':
