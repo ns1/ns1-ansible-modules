@@ -143,6 +143,12 @@ def test_get_changed_params(mock_diff_in_secondaries, mock_diff_params):
             id="ignore_networks_order",
         ),
         pytest.param(
+            [{"ip": "1.1.1.1", "port": 1, "networks": [0], "notify": True},],
+            [{"ip": "1.1.1.1", "port": 1, "notify": True},],
+            False,
+            id="ignore_extra_key_in_have",
+        ),
+        pytest.param(
             [
                 {"ip": "1.1.1.1", "port": 1, "networks": [0], "notify": True},
                 {"ip": "2.2.2.2", "port": 2, "networks": [0], "notify": True},
@@ -282,6 +288,11 @@ def test_check_mode(mock_zone_update, ns1_config, check_mode):
             {"secondary": {"enabled": True}},
             id="none_suboption",
         ),
+        pytest.param(
+            {"secondary": {"enabled": None, "primary_ip": None}},
+            {},
+            id="all_none_suboption",
+        ),
     ],
 )
 def test_sanitize_params(module_args, exp_params):
@@ -361,7 +372,7 @@ def test_present(mock_create, mock_update_on_change, mock_zone, exp_changed):
     "diff,exp_changed",
     [
         pytest.param({"nx_ttl": 0}, True, id="diff"),
-        pytest.param(None, False, id="no_diff"),
+        pytest.param({}, False, id="no_diff"),
     ],
 )
 @patch("library.ns1_zone.NS1Zone.get_changed_params")

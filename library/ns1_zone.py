@@ -266,6 +266,7 @@ SET_PARAMS = [
 # list of params that should be removed before calls to API
 SANITIZED_PARAMS = [
     "state",
+    "name",
 ]
 
 
@@ -359,8 +360,8 @@ class NS1Zone(NS1ModuleBase):
             mutually_exclusive=self.mutually_exclusive,
         )
 
-    def sanitize_params(self, params, i=0):
-        """Removes all Ansible module parameters from dict that have no value
+    def sanitize_params(self, params):
+        """Removes fields from Ansible module parameters that have no value
         or are listed in SANITIZED_PARAMS
 
         :param params: Ansible module parameters
@@ -368,18 +369,23 @@ class NS1Zone(NS1ModuleBase):
         :return: Sanitized dict of params
         :rtype: dict
         """
-        sanitized = {}
-        for k, v in params.items():
-            if isinstance(v, dict):
-                i += 1
-                v = self.sanitize_params(v, i)
-            if v is not None and k not in SANITIZED_PARAMS:
-                # Skip adding Name param, but include any Name subparams
-                # This is an ansible param, not something NS1 needs
-                if i == 0 and k == "name":
-                    continue
-                sanitized[k] = v
-        return sanitized
+
+        def filter_empty_params(d):
+            filtered = {}
+            for key, val in d.items():
+                if isinstance(val, dict):
+                    nested = filter_empty_params(val)
+                    if nested:
+                        filtered[key] = nested
+                elif val is not None:
+                    filtered[key] = val
+            return filtered
+
+        params = filter_empty_params(params)
+        # remove sanitized params from top level
+        for param in SANITIZED_PARAMS:
+            params.pop(param, None)
+        return params
 
     def get_zone(self, name):
         """Retrieves a zone from NS1. If no name is given or zone does not
@@ -449,10 +455,10 @@ class NS1Zone(NS1ModuleBase):
             if not self.diff_in_secondaries(
                 have_secondaries, want_secondaries
             ):
-                diff["primary"].pop("secondaries")
+                diff["primary"].pop("secondaries", None)
                 # if secondaries was only key in primary, remove primary
                 if not diff["primary"]:
-                    diff.pop("primary")
+                    diff.pop("primary", None)
         return diff
 
     def diff_in_secondaries(self, have_secondaries, want_secondaries):
