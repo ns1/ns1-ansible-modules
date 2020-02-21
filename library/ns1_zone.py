@@ -441,7 +441,7 @@ class NS1Zone(NS1ModuleBase):
         :rtype: dict
         """
         diff = self.diff_params(have, want)
-        # perform deep comparison of secondaries
+        # perform deep comparison of secondaries if primary exists and has diff
         if "primary" in have and "primary" in diff:
             have_secondaries = have["primary"].get("secondaries")
             want_secondaries = want["primary"].get("secondaries")
@@ -451,7 +451,7 @@ class NS1Zone(NS1ModuleBase):
             ):
                 diff["primary"].pop("secondaries")
                 # if secondaries was only key in primary, remove primary
-                if len(diff["primary"]) == 0:
+                if not diff["primary"]:
                     diff.pop("primary")
         return diff
 

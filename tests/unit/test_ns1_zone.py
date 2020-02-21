@@ -147,12 +147,12 @@ def test_get_changed_params(mock_diff_in_secondaries, mock_diff_params):
                 {"ip": "1.1.1.1", "port": 1, "networks": [0], "notify": True},
                 {"ip": "2.2.2.2", "port": 2, "networks": [0], "notify": True},
             ],
-            [{"ip": "1.1.1.1", "port": 1, "networks": [0], "notify": True},],
+            [{"ip": "1.1.1.1", "port": 1, "networks": [0], "notify": True}],
             True,
             id="removed_secondary",
         ),
         pytest.param(
-            [{"ip": "1.1.1.1", "port": 1, "networks": [0], "notify": True},],
+            [{"ip": "1.1.1.1", "port": 1, "networks": [0], "notify": True}],
             [
                 {"ip": "1.1.1.1", "port": 1, "networks": [0], "notify": True},
                 {"ip": "2.2.2.2", "port": 2, "networks": [0], "notify": True},
@@ -161,8 +161,8 @@ def test_get_changed_params(mock_diff_in_secondaries, mock_diff_params):
             id="added_secondary",
         ),
         pytest.param(
-            [{"ip": "1.1.1.1", "port": 1, "networks": [0], "notify": True},],
-            [{"ip": "1.1.1.1", "port": 2, "networks": [0], "notify": True},],
+            [{"ip": "1.1.1.1", "port": 1, "networks": [0], "notify": True}],
+            [{"ip": "1.1.1.1", "port": 2, "networks": [0], "notify": True}],
             True,
             id="updated_param",
         ),
