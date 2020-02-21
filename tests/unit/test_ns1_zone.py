@@ -179,13 +179,13 @@ def test_diff_in_secondaries(have, want, exp):
     assert z.diff_in_secondaries(have, want) == exp
 
 
-def test_convert_secondaries_to_hash():
+def test_convert_secondaries_to_dict():
     z = ns1_zone.NS1Zone()
     secondaries = [
         {"ip": "1.1.1.1", "port": 1, "networks": [0], "notify": True},
         {"ip": "2.2.2.2", "port": 2, "networks": [0], "notify": True},
     ]
-    exp_hash = {
+    exp = {
         "1.1.1.1:1": {
             "ip": "1.1.1.1",
             "port": 1,
@@ -199,7 +199,7 @@ def test_convert_secondaries_to_hash():
             "notify": True,
         },
     }
-    assert z.convert_secondaries_to_hash(secondaries) == exp_hash
+    assert z.convert_secondaries_to_dict(secondaries) == exp
 
 
 @pytest.mark.parametrize(

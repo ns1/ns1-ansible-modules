@@ -182,7 +182,7 @@ options:
     suboptions:
       enabled:
         description:
-          - If true the zone the zone is enabled for outgoing zone transfers.
+          - If true the zone is enabled for outgoing zone transfers.
         type: bool
         required: false
       secondaries:
@@ -480,28 +480,28 @@ class NS1Zone(NS1ModuleBase):
         elif len(want_secondaries) != len(have_secondaries):
             return True
 
-        have_hash = self.convert_secondaries_to_hash(have_secondaries)
-        want_hash = self.convert_secondaries_to_hash(want_secondaries)
-        diff = self.diff_params(have_hash, want_hash)
+        have = self.convert_secondaries_to_dict(have_secondaries)
+        want = self.convert_secondaries_to_dict(want_secondaries)
+        diff = self.diff_params(have, want)
         if diff:
             return True
 
         return False
 
-    def convert_secondaries_to_hash(self, secondaries):
-        """Converts a secondaries list to hash. Keys are a concatenated string
+    def convert_secondaries_to_dict(self, secondaries):
+        """Converts a secondaries list to a dictionary. Keys are a concatenated string
         of IP and Port fields.
 
         :param secondaries: List of secondary dicts
         :type secondaries: list
-        :return: Hash of secondary dicts
+        :return: Dict of secondary dicts
         :rtype: dict
         """
-        secondaries_hash = {}
+        secondaries_dict = {}
         for secondary in secondaries:
             socket = "{0}:{1}".format(secondary["ip"], secondary["port"])
-            secondaries_hash[socket] = secondary
-        return secondaries_hash
+            secondaries_dict[socket] = secondary
+        return secondaries_dict
 
     @Decorators.skip_in_check_mode
     def update(self, zone, args):
