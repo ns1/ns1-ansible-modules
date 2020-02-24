@@ -489,7 +489,7 @@ class NS1Zone(NS1ModuleBase):
         return False
 
     def convert_secondaries_to_dict(self, secondaries):
-        """Converts a secondaries list to a dictionary. Keys are a concatenated string
+        """Converts a secondaries list to a dictionary. Keys are a tuple of
         of IP and Port fields.
 
         :param secondaries: List of secondary dicts
@@ -497,11 +497,7 @@ class NS1Zone(NS1ModuleBase):
         :return: Dict of secondary dicts
         :rtype: dict
         """
-        secondaries_dict = {}
-        for secondary in secondaries:
-            socket = "{0}:{1}".format(secondary["ip"], secondary["port"])
-            secondaries_dict[socket] = secondary
-        return secondaries_dict
+        return {(s.get("ip"), s.get("port")): s for s in secondaries}
 
     @Decorators.skip_in_check_mode
     def update(self, zone, args):
