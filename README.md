@@ -10,12 +10,7 @@ NS1 is an authoritative DNS platform providing data-driven global traffic routin
 Completed Modules:
  - ns1_zone
  - ns1_record
-
-Still Needed:
- - ns1_facts
- - ns1_data_source
- - ns1_data_feed
- - ns1_monitoring_job
+ - ns1_data_source_info
 
 # Installation
 
@@ -27,7 +22,7 @@ Still Needed:
 
 ## Installing the previous version
 
-The previous version of these modules can be installed from ansible-galaxy via `ansible-galaxy install ns1.ns1,v1.0`
+Previous versions of these modules can be installed from ansible-galaxy by including the desired version tag after the role name (i.e. `ansible-galaxy install ns1.ns1,v2.1.0`).
 
 # Testing
 

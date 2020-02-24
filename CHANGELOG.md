@@ -1,3 +1,18 @@
+## 3.0.0 (February 24, 2020)
+
+BREAKING CHANGES
+* ns1_zone: Adds fully defined suboptions for `secondary` and `primary` options. These previously accepted arbitrary dict as values.
+* ns1_zone: Returned zone data is now returned in a key named `zone` (was previously returned in `data`).
+
+ENHANCEMENTS
+* Adds unit tests
+* Adds ns1_datasource_info module for read-only listing of available datasources and their feeds
+
+IMPROVEMENTS
+* ns1_record:  Supresses answer level feeds list from diff comparison. This is maintained API-side based on the connected feed(s), so we don't
+  want it triggering a change event.
+* ns1_zone: refactor for readability and linting.
+
 ## 2.1.0 (January 13, 2020)
 
 ENHANCEMENTS
