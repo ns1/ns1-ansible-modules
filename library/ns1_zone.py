@@ -497,7 +497,12 @@ class NS1Zone(NS1ModuleBase):
         :return: Dict of secondary dicts
         :rtype: dict
         """
-        return {(s.get("ip"), s.get("port")): s for s in secondaries}
+        try:
+            return {(s["ip"], s["port"]): s for s in secondaries}
+        except KeyError as ke:
+            self.module.fail_json(
+                msg="missing field in secondary definition: {0}".format(ke)
+            )
 
     @Decorators.skip_in_check_mode
     def update(self, zone, args):

@@ -143,8 +143,8 @@ def test_get_changed_params(mock_diff_in_secondaries, mock_diff_params):
             id="ignore_networks_order",
         ),
         pytest.param(
-            [{"ip": "1.1.1.1", "port": 1, "networks": [0], "notify": True},],
-            [{"ip": "1.1.1.1", "port": 1, "notify": True},],
+            [{"ip": "1.1.1.1", "port": 1, "networks": [0], "notify": True}],
+            [{"ip": "1.1.1.1", "port": 1, "notify": True}],
             False,
             id="ignore_extra_key_in_have",
         ),
@@ -182,11 +182,16 @@ def test_diff_in_secondaries(have, want, exp):
 def test_convert_secondaries_to_dict():
     z = ns1_zone.NS1Zone()
     secondaries = [
-        {"ip": "1.1.1.1", "networks": [0], "notify": True},
+        {"ip": "1.1.1.1", "port": 1, "networks": [0], "notify": True},
         {"ip": "2.2.2.2", "port": 2, "networks": [0], "notify": True},
     ]
     exp = {
-        ("1.1.1.1", None): {"ip": "1.1.1.1", "networks": [0], "notify": True},
+        ("1.1.1.1", 1): {
+            "ip": "1.1.1.1",
+            "port": 1,
+            "networks": [0],
+            "notify": True,
+        },
         ("2.2.2.2", 2): {
             "ip": "2.2.2.2",
             "port": 2,
