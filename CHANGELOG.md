@@ -9,9 +9,8 @@ ENHANCEMENTS
 * Adds ns1_datasource_info module for read-only listing of available datasources and their feeds
 
 IMPROVEMENTS
-* ns1_record:  Supresses answer level feeds list from diff comparison. This is maintained API-side based on the connected feed(s), so we don't
-  want it triggering a change event.
-* ns1_zone: refactor for readability and linting.
+* ns1_record:  Supresses answer level feeds list from diff comparison. This is maintained API-side based on the connected feed(s), it shouldn't trigger a change event.
+* ns1_zone: Refactor for readability and linting.
 
 ## 2.1.0 (January 13, 2020)
 
