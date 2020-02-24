@@ -49,12 +49,7 @@ def test_module_fail_when_required_args_missing():
             id="updated_dict_param",
         ),
         pytest.param(
-            {
-                "secondary": {
-                    "enabled": True,
-                    "tsig": {"enabled": True}
-                }
-            },
+            {"secondary": {"enabled": True, "tsig": {"enabled": True}}},
             {
                 "secondary": {
                     "enabled": True,
@@ -86,11 +81,125 @@ def test_module_fail_when_required_args_missing():
     ],
 )
 @pytest.mark.usefixtures("mock_module_helper")
-def test_compare_params(have, want, exp):
-    zone = "test.zone"
-    FakeAnsibleModule.set_module_args({"apiKey": "testkey", "name": zone})
+def test_diff_params(have, want, exp):
+    FakeAnsibleModule.set_module_args(
+        {"apiKey": "testkey", "name": "test.zone"}
+    )
     z = ns1_zone.NS1Zone()
-    assert z.compare_params(have, want) == exp
+    assert z.diff_params(have, want) == exp
+
+
+@patch("library.ns1_zone.NS1Zone.diff_params")
+@patch("library.ns1_zone.NS1Zone.diff_in_secondaries")
+def test_get_changed_params(mock_diff_in_secondaries, mock_diff_params):
+    z = ns1_zone.NS1Zone()
+
+    # verify we perform compare on secondaries when diff contains secondaries
+    # and secondaries is stripped if no diff
+    mock_diff_params.return_value = {
+        "primary": {"secondaries": [{"ip": "1.1.1.1"}]}
+    }
+    have = {"primary": {"secondaries": [{"ip": "1.1.1.1"}]}}
+    want = {"primary": {"secondaries": [{"ip": "1.1.1.1"}]}}
+    mock_diff_in_secondaries.return_value = False
+    diff = z.get_changed_params(have, want)
+    mock_diff_in_secondaries.assert_called_once()
+    assert diff == {}
+
+
+@pytest.mark.parametrize(
+    "have,want,exp",
+    [
+        pytest.param(
+            [
+                {"ip": "1.1.1.1", "port": 1, "networks": [0], "notify": True},
+                {"ip": "2.2.2.2", "port": 2, "networks": [0], "notify": True},
+            ],
+            [
+                {"ip": "2.2.2.2", "port": 2, "networks": [0], "notify": True},
+                {"ip": "1.1.1.1", "port": 1, "networks": [0], "notify": True},
+            ],
+            False,
+            id="ignore_secondary_order",
+        ),
+        pytest.param(
+            [
+                {
+                    "ip": "1.1.1.1",
+                    "port": 1,
+                    "networks": [0, 1],
+                    "notify": True,
+                },
+            ],
+            [
+                {
+                    "ip": "1.1.1.1",
+                    "port": 1,
+                    "networks": [1, 0],
+                    "notify": True,
+                },
+            ],
+            False,
+            id="ignore_networks_order",
+        ),
+        pytest.param(
+            [{"ip": "1.1.1.1", "port": 1, "networks": [0], "notify": True}],
+            [{"ip": "1.1.1.1", "port": 1, "notify": True}],
+            False,
+            id="ignore_extra_key_in_have",
+        ),
+        pytest.param(
+            [
+                {"ip": "1.1.1.1", "port": 1, "networks": [0], "notify": True},
+                {"ip": "2.2.2.2", "port": 2, "networks": [0], "notify": True},
+            ],
+            [{"ip": "1.1.1.1", "port": 1, "networks": [0], "notify": True}],
+            True,
+            id="removed_secondary",
+        ),
+        pytest.param(
+            [{"ip": "1.1.1.1", "port": 1, "networks": [0], "notify": True}],
+            [
+                {"ip": "1.1.1.1", "port": 1, "networks": [0], "notify": True},
+                {"ip": "2.2.2.2", "port": 2, "networks": [0], "notify": True},
+            ],
+            True,
+            id="added_secondary",
+        ),
+        pytest.param(
+            [{"ip": "1.1.1.1", "port": 1, "networks": [0], "notify": True}],
+            [{"ip": "1.1.1.1", "port": 2, "networks": [0], "notify": True}],
+            True,
+            id="updated_param",
+        ),
+    ],
+)
+def test_diff_in_secondaries(have, want, exp):
+    z = ns1_zone.NS1Zone()
+    assert z.diff_in_secondaries(have, want) == exp
+
+
+def test_convert_secondaries_to_dict():
+    z = ns1_zone.NS1Zone()
+    secondaries = [
+        {"ip": "1.1.1.1", "port": 1, "networks": [0], "notify": True},
+        {"ip": "2.2.2.2", "port": 2, "networks": [0], "notify": True},
+    ]
+    exp = {
+        ("1.1.1.1", 1): {
+            "ip": "1.1.1.1",
+            "port": 1,
+            "networks": [0],
+            "notify": True,
+        },
+        ("2.2.2.2", 2): {
+            "ip": "2.2.2.2",
+            "port": 2,
+            "networks": [0],
+            "notify": True,
+        },
+    }
+    assert z.convert_secondaries_to_dict(secondaries) == exp
 
 
 @pytest.mark.parametrize(
@@ -179,6 +288,11 @@ def test_check_mode(mock_zone_update, ns1_config, check_mode):
             {"secondary": {"enabled": True}},
             id="none_suboption",
         ),
+        pytest.param(
+            {"secondary": {"enabled": None, "primary_ip": None}},
+            {},
+            id="all_none_suboption",
+        ),
     ],
 )
 def test_sanitize_params(module_args, exp_params):
@@ -238,19 +352,19 @@ def test_create(mock_zone_create, ns1_config):
         pytest.param(None, True, id="create"),
     ],
 )
-@patch("library.ns1_zone.NS1Zone.update_on_diff")
+@patch("library.ns1_zone.NS1Zone.update_on_change")
 @patch("library.ns1_zone.NS1Zone.create")
-def test_present(mock_create, mock_update_on_diff, mock_zone, exp_changed):
-    mock_update_on_diff.return_value = (exp_changed, mock_zone)
+def test_present(mock_create, mock_update_on_change, mock_zone, exp_changed):
+    mock_update_on_change.return_value = (exp_changed, mock_zone)
     z = ns1_zone.NS1Zone()
     changed, zone = z.present(mock_zone)
     assert changed == exp_changed
     assert zone is not None
     if mock_zone:
         mock_create.assert_not_called()
-        mock_update_on_diff.assert_called_once()
+        mock_update_on_change.assert_called_once()
     else:
-        mock_update_on_diff.assert_not_called()
+        mock_update_on_change.assert_not_called()
         mock_create.assert_called_once()
 
 
@@ -258,18 +372,20 @@ def test_present(mock_create, mock_update_on_diff, mock_zone, exp_changed):
     "diff,exp_changed",
     [
         pytest.param({"nx_ttl": 0}, True, id="diff"),
-        pytest.param(None, False, id="no_diff"),
+        pytest.param({}, False, id="no_diff"),
     ],
 )
-@patch("library.ns1_zone.NS1Zone.compare_params")
+@patch("library.ns1_zone.NS1Zone.get_changed_params")
 @patch("library.ns1_zone.NS1Zone.update")
-def test_update_on_diff(mock_update, mock_compare_params, diff, exp_changed):
+def test_update_on_change(
+    mock_update, mock_get_changed_params, diff, exp_changed
+):
     mock_zone = Mock()
     mock_want = Mock()
-    mock_compare_params.return_value = diff
+    mock_get_changed_params.return_value = diff
     mock_update.return_value = diff
     z = ns1_zone.NS1Zone()
-    changed, zone = z.update_on_diff(mock_zone, mock_want)
+    changed, zone = z.update_on_change(mock_zone, mock_want)
     assert changed == exp_changed
     if exp_changed:
         assert zone != mock_zone

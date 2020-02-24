@@ -146,7 +146,7 @@ options:
         description:
           - Used to configure TSIG authentication on a secondary zone
         type: dict
-        required: False
+        required: false
         default: None
         suboptions:
           enabled:
@@ -176,9 +176,35 @@ options:
     description:
       - To enable slaving of your zone by third party DNS servers,
         you must include a primary object.
-    type: str
+    type: dict
     required: false
     default: None
+    suboptions:
+      enabled:
+        description:
+          - If true the zone is enabled for outgoing zone transfers.
+        type: bool
+        required: false
+      secondaries:
+        description:
+          - Collection of secondary DNS servers that slave off this zone.
+        type: list
+        required: false
+        suboptions:
+          ip:
+            description:
+              - The IPv4 address of the secondary DNS server.
+            type: str
+          port:
+            description:
+              - The port on the secondary server to send NOTIFY messages
+            type: int
+            required: false
+          notify:
+            description:
+              - Whether or not NS1 should send NOTIFY messages to the host
+                when the zone changes
+            type: bool
 
 requirements:
   - python >= 2.7
@@ -240,6 +266,7 @@ SET_PARAMS = [
 # list of params that should be removed before calls to API
 SANITIZED_PARAMS = [
     "state",
+    "name",
 ]
 
 
@@ -278,7 +305,7 @@ class NS1Zone(NS1ModuleBase):
                         type="dict",
                         default=None,
                         options=dict(
-                            enabled=dict(type="bool", default=False),
+                            enabled=dict(type="bool", default=None),
                             hash=dict(type="str", default=None),
                             key=dict(type="str", default=None),
                             name=dict(type="str", default=None),
@@ -286,7 +313,27 @@ class NS1Zone(NS1ModuleBase):
                     ),
                 ),
             ),
-            primary=dict(required=False, type="str", default=None),
+            primary=dict(
+                required=False,
+                type="dict",
+                default=None,
+                options=dict(
+                    enabled=dict(type="bool", default=None),
+                    secondaries=dict(
+                        type="list",
+                        default=None,
+                        options=dict(
+                            ip=dict(type="str", default=None),
+                            port=dict(
+                                required=False, type="int", default=None
+                            ),
+                            notify=dict(
+                                required=False, type="bool", default=None
+                            ),
+                        ),
+                    ),
+                ),
+            ),
             dnssec=dict(required=False, type="bool", default=None),
             state=dict(
                 required=False,
@@ -313,8 +360,8 @@ class NS1Zone(NS1ModuleBase):
             mutually_exclusive=self.mutually_exclusive,
         )
 
-    def sanitize_params(self, params, i=0):
-        """Removes all Ansible module parameters from dict that have no value
+    def sanitize_params(self, params):
+        """Removes fields from Ansible module parameters that have no value
         or are listed in SANITIZED_PARAMS
 
         :param params: Ansible module parameters
@@ -322,18 +369,23 @@ class NS1Zone(NS1ModuleBase):
         :return: Sanitized dict of params
         :rtype: dict
         """
-        sanitized = {}
-        for k, v in params.items():
-            if isinstance(v, dict):
-                i += 1
-                v = self.sanitize_params(v, i)
-            if v is not None and k not in SANITIZED_PARAMS:
-                # Skip adding Name param, but include any Name subparams
-                # This is an ansible param, not something NS1 needs
-                if i == 0 and k == "name":
-                    continue
-                sanitized[k] = v
-        return sanitized
+
+        def filter_empty_params(d):
+            filtered = {}
+            for key, val in d.items():
+                if isinstance(val, dict):
+                    nested = filter_empty_params(val)
+                    if nested:
+                        filtered[key] = nested
+                elif val is not None:
+                    filtered[key] = val
+            return filtered
+
+        params = filter_empty_params(params)
+        # remove sanitized params from top level
+        for param in SANITIZED_PARAMS:
+            params.pop(param, None)
+        return params
 
     def get_zone(self, name):
         """Retrieves a zone from NS1. If no name is given or zone does not
@@ -357,7 +409,7 @@ class NS1Zone(NS1ModuleBase):
                     zone = None
         return zone
 
-    def compare_params(self, have, want):
+    def diff_params(self, have, want):
         """Performs deep comparison of two sets of Ansible parameters. Returns
         values from want that differ from have.
 
@@ -374,7 +426,7 @@ class NS1Zone(NS1ModuleBase):
                 diff[param] = wanted_val
                 continue
             if isinstance(wanted_val, dict):
-                subparam_diff = self.compare_params(have[param], wanted_val)
+                subparam_diff = self.diff_params(have[param], wanted_val)
                 if subparam_diff:
                     diff[param] = subparam_diff
             elif isinstance(wanted_val, list) and param in SET_PARAMS:
@@ -383,6 +435,74 @@ class NS1Zone(NS1ModuleBase):
             elif have[param] != wanted_val:
                 diff[param] = wanted_val
         return diff
+
+    def get_changed_params(self, have, want):
+        """Gets Ansible params in want that have changed from have
+
+        :param have: Existing set of parameters
+        :type have: dict
+        :param want: Desired end state of parameters
+        :type want: dict
+        :return: Parameters in want that differ from have
+        :rtype: dict
+        """
+        diff = self.diff_params(have, want)
+        # perform deep comparison of secondaries if primary exists and has diff
+        if "primary" in have and "primary" in diff:
+            have_secondaries = have["primary"].get("secondaries")
+            want_secondaries = want["primary"].get("secondaries")
+            # if no difference in values, remove secondaries from diff results
+            if not self.diff_in_secondaries(
+                have_secondaries, want_secondaries
+            ):
+                diff["primary"].pop("secondaries", None)
+                # if secondaries was only key in primary, remove primary
+                if not diff["primary"]:
+                    diff.pop("primary", None)
+        return diff
+
+    def diff_in_secondaries(self, have_secondaries, want_secondaries):
+        """Performs deep comparison of two lists of secondaries, ignoring order.
+
+        :param have_secondaries: Existing secondaries list
+        :type have_secondaries: list
+        :param want_secondaries: Desired end state of secondaries list
+        :type want_secondaries: list
+        :return: Whether or not there is a difference between the lists
+        :rtype: bool
+        """
+        if want_secondaries is None:
+            # if no secondaries provided in params, no change
+            return False
+        elif have_secondaries is None:
+            # if no secondaries were already set, will be a change
+            return True
+        elif len(want_secondaries) != len(have_secondaries):
+            return True
+
+        have = self.convert_secondaries_to_dict(have_secondaries)
+        want = self.convert_secondaries_to_dict(want_secondaries)
+        diff = self.diff_params(have, want)
+        if diff:
+            return True
+
+        return False
+
+    def convert_secondaries_to_dict(self, secondaries):
+        """Converts a secondaries list to a dictionary. Keys are a tuple of
+        of IP and Port fields.
+
+        :param secondaries: List of secondary dicts
+        :type secondaries: list
+        :return: Dict of secondary dicts
+        :rtype: dict
+        """
+        try:
+            return {(s["ip"], s["port"]): s for s in secondaries}
+        except KeyError as ke:
+            self.module.fail_json(
+                msg="missing field in secondary definition: {0}".format(ke)
+            )
 
     @Decorators.skip_in_check_mode
     def update(self, zone, args):
@@ -435,6 +555,7 @@ class NS1Zone(NS1ModuleBase):
             changed, zone = self.present(zone)
         if state == "absent":
             changed = self.absent(zone)
+            zone = {}
         return self.build_result(changed, zone)
 
     def present(self, zone):
@@ -451,10 +572,10 @@ class NS1Zone(NS1ModuleBase):
         """
         want = self.sanitize_params(self.module.params)
         if zone:
-            return self.update_on_diff(zone, want)
+            return self.update_on_change(zone, want)
         return True, self.create(want)
 
-    def update_on_diff(self, zone, want):
+    def update_on_change(self, zone, want):
         """triggers update of zone if diff between zone and desired state in want
 
         :param zone: Zone object of existing zone returned by NS1
@@ -465,9 +586,9 @@ class NS1Zone(NS1ModuleBase):
         occured and second value is new or updated zone object
         :rtype: tuple(bool, dict)
         """
-        diff = self.compare_params(zone.data, want)
-        if diff:
-            return True, self.update(zone, diff)
+        changed_params = self.get_changed_params(zone.data, want)
+        if changed_params:
+            return True, self.update(zone, changed_params)
         return False, zone
 
     def absent(self, zone):

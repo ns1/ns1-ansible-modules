@@ -2,6 +2,9 @@
   - hosts: localhost
 
     tasks:
+      ##########
+      # Verify test zones are absent
+      ##########
       - name: setup
         local_action:
           module: ns1_zone
@@ -12,6 +15,7 @@
           - "{{ test_zone }}"
           - "linked-{{ test_zone }}"
           - "secondary-{{ test_zone }}"
+          - "primary-{{ test_zone }}"
         register: zone_setup
 
       - name: Verify setup
@@ -19,6 +23,9 @@
           that:
             - zone_setup is success
 
+      ##########
+      # Test normal zone behaviour
+      ##########
       - name: Test zone creation
         local_action:
           module: ns1_zone
@@ -82,6 +89,9 @@
             - zone_disable_dnssec is changed
             - zone_disable_dnssec.zone.dnssec == False
 
+      ##########
+      # Test linked zone behaviour
+      ##########
       - name: Test linked zone creation
         local_action:
           module: ns1_zone
@@ -104,6 +114,9 @@
           name: "linked-{{ test_zone }}"
           state: absent
 
+      ##########
+      # Test secondary zone behaviour
+      ##########
       - name: Create secondary zone
         local_action:
           module: ns1_zone
@@ -156,6 +169,116 @@
           that:
             - secondary_zone_delete is changed
 
+      ##########
+      # Test primary zone behaviour
+      ##########
+      - name: Create primary zone
+        local_action:
+          module: ns1_zone
+          apiKey: "{{ ns1_token }}"
+          name: "primary-{{ test_zone }}"
+          primary:
+            enabled: true
+            secondaries:
+              - ip: "1.1.1.1"
+                port: 53
+                notify: false
+              - ip: "2.2.2.2"
+                notify: true
+          state: present
+        register: primary_zone
+
+      - name: Verify primary zone creation
+        assert:
+          that:
+            - primary_zone is changed
+            - primary_zone.zone.primary.enabled == True
+            - primary_zone.zone.primary.secondaries[0].ip  == "1.1.1.1"
+            - primary_zone.zone.primary.secondaries[0].port  == 53
+            - primary_zone.zone.primary.secondaries[0].notify  == false
+            - primary_zone.zone.primary.secondaries[1].ip  == "2.2.2.2"
+            - primary_zone.zone.primary.secondaries[1].notify  == true
+
+      - name: Update primary zone
+        local_action:
+          module: ns1_zone
+          apiKey: "{{ ns1_token }}"
+          name: "primary-{{ test_zone }}"
+          primary:
+            enabled: true
+            secondaries:
+              - ip: "1.1.1.1"
+                port: 53
+                notify: false
+              - ip: "2.2.2.2"
+                port: 8080
+                notify: true
+          state: present
+        register: primary_zone_update
+
+      - name: Verify primary zone update
+        assert:
+          that:
+            - primary_zone_update is changed
+            - primary_zone_update.zone.primary.secondaries[1].ip  == "2.2.2.2"
+            - primary_zone_update.zone.primary.secondaries[1].port  == 8080
+            - primary_zone_update.zone.primary.secondaries[1].notify  == true
+
+      - name: Verify idempotency
+        local_action:
+          module: ns1_zone
+          apiKey: "{{ ns1_token }}"
+          name: "primary-{{ test_zone }}"
+          primary:
+            enabled: true
+            secondaries:
+              - ip: "2.2.2.2"
+                port: 8080
+                notify: true
+              - ip: "1.1.1.1"
+                port: 53
+                notify: false
+          state: present
+        register: primary_zone_idempotent
+
+      - name: Verify idempotency
+        assert:
+          that:
+            - primary_zone_idempotent is not changed
+
+      - name: Delete secondaries
+        local_action:
+          module: ns1_zone
+          apiKey: "{{ ns1_token }}"
+          name: "primary-{{ test_zone }}"
+          primary:
+            enabled: true
+            secondaries: []
+          state: present
+        register: primary_zone_no_secondaries
+
+      - name: Verify secondaries deleted
+        assert:
+          that:
+            - primary_zone_no_secondaries is changed
+            - primary_zone_no_secondaries.zone.primary.secondaries | length == 0
+
+      - name: Delete primary zone
+        local_action:
+          module: ns1_zone
+          apiKey: "{{ ns1_token }}"
+          name: "primary-{{ test_zone }}"
+          state: absent
+        register: primary_zone_delete
+
+      - name: Verify primary zone deleted
+        assert:
+          that:
+            - primary_zone_delete is changed
+
+      ##########
+      # Clean up test zone
+      ##########
       - name: Test zone deletion
         local_action:
           module: ns1_zone
