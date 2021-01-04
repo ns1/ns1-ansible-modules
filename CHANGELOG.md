@@ -1,3 +1,8 @@
+## 3.0.1 (Unreleased)
+
+ENHANCEMENTS
+* Add region support to answer parameters (thanks @tsimson!)
+
 ## 3.0.0 (February 24, 2020)
 
 BREAKING CHANGES
