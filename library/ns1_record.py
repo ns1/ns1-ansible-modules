@@ -79,6 +79,11 @@ options:
           - Answer level metadata
         type: dict
         required: false
+      region:
+        description:
+          - Region (Answer Group) that the answer belongs to.
+        type: str
+        required: false
   ignore_missing_zone:
     description:
       - Attempting to delete a record from a zone that is not present will
@@ -303,6 +308,7 @@ class NS1Record(NS1ModuleBase):
                 options=dict(
                     answer=dict(type='list', default=None),
                     meta=dict(type='dict', default=None),
+                    region=dict(type='str', default=None),
                 ),
             ),
             ignore_missing_zone=dict(required=False, type='bool', default=False),
