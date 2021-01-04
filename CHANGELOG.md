@@ -1,4 +1,4 @@
-## 3.0.1 (Unreleased)
+## 3.0.1 (January 04, 2021)
 
 ENHANCEMENTS
 * Add region support to answer parameters (thanks @tsimson!)
