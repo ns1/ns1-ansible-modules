@@ -243,6 +243,8 @@ RETURN = r"""
 
 import functools  # noqa
 
+import ruamel.yaml as yaml
+
 try:
     from ansible.module_utils.ns1 import NS1ModuleBase, HAS_NS1, Decorators
 except ImportError:
@@ -438,7 +440,6 @@ class NS1Zone(NS1ModuleBase):
 
     def get_changed_params(self, have, want):
         """Gets Ansible params in want that have changed from have
-
         :param have: Existing set of parameters
         :type have: dict
         :param want: Desired end state of parameters
@@ -447,19 +448,45 @@ class NS1Zone(NS1ModuleBase):
         :rtype: dict
         """
         diff = self.diff_params(have, want)
+
         # perform deep comparison of secondaries if primary exists and has diff
         if "primary" in have and "primary" in diff:
             have_secondaries = have["primary"].get("secondaries")
             want_secondaries = want["primary"].get("secondaries")
+
             # if no difference in values, remove secondaries from diff results
             if not self.diff_in_secondaries(
                 have_secondaries, want_secondaries
             ):
                 diff["primary"].pop("secondaries", None)
+
                 # if secondaries was only key in primary, remove primary
                 if not diff["primary"]:
                     diff.pop("primary", None)
-        return diff
+
+        if self.module._diff:
+
+            # build after dict from have with updated changes
+            after = {}
+            for param in have:
+                if param not in diff:
+                    after[param] = have[param]
+                else:
+                    after[param] = diff[param]
+
+            # convert dictionaries to yaml txt dump
+            have_yaml = yaml.safe_dump(have, default_flow_style=False)
+            diff_yaml = yaml.safe_dump(after, default_flow_style=False)
+
+            # build diff from different yaml dumps
+            result_diff = dict(
+                before=have_yaml,
+                after=diff_yaml
+            )
+            return result_diff
+
+        else:
+            return diff
 
     def diff_in_secondaries(self, have_secondaries, want_secondaries):
         """Performs deep comparison of two lists of secondaries, ignoring order.
@@ -552,11 +579,11 @@ class NS1Zone(NS1ModuleBase):
         state = self.module.params.get("state")
         zone = self.get_zone(self.module.params.get("name"))
         if state == "present":
-            changed, zone = self.present(zone)
+            changed, zone, diff = self.present(zone)
         if state == "absent":
             changed = self.absent(zone)
             zone = {}
-        return self.build_result(changed, zone)
+        return self.build_result(changed, zone, diff)
 
     def present(self, zone):
         """Handles use case where desired state of zone is present.
@@ -587,8 +614,12 @@ class NS1Zone(NS1ModuleBase):
         :rtype: tuple(bool, dict)
         """
         changed_params = self.get_changed_params(zone.data, want)
-        if changed_params:
-            return True, self.update(zone, changed_params)
+
+        if changed_params and not self.module.check_mode:
+            return True, self.update(zone, changed_params), changed_params
+        else:
+            return True, zone, changed_params
+
         return False, zone
 
     def absent(self, zone):
@@ -606,7 +637,7 @@ class NS1Zone(NS1ModuleBase):
 
         return False
 
-    def build_result(self, changed, zone):
+    def build_result(self, changed, zone, diff):
         """Builds dict of results from module execution to pass to module.exit_json()
 
         :param changed: Whether or not a change occured
@@ -617,6 +648,10 @@ class NS1Zone(NS1ModuleBase):
         :rtype: dict
         """
         result = {"changed": changed}
+
+        if diff and self.module._diff:
+            result["diff"] = diff
+
         if zone and not self.module.check_mode:
             result["id"] = zone["id"]
             result["zone"] = zone.data
