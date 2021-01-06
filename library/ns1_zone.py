@@ -448,6 +448,7 @@ class NS1Zone(NS1ModuleBase):
         :rtype: dict
         """
         diff = self.diff_params(have, want)
+        result_diff = {}
 
         # perform deep comparison of secondaries if primary exists and has diff
         if "primary" in have and "primary" in diff:
@@ -483,10 +484,10 @@ class NS1Zone(NS1ModuleBase):
                 before=have_yaml,
                 after=diff_yaml
             )
-            return result_diff
+            return result_diff, diff
 
         else:
-            return diff
+            return result_diff, diff
 
     def diff_in_secondaries(self, have_secondaries, want_secondaries):
         """Performs deep comparison of two lists of secondaries, ignoring order.
@@ -613,14 +614,16 @@ class NS1Zone(NS1ModuleBase):
         occured and second value is new or updated zone object
         :rtype: tuple(bool, dict)
         """
-        changed_params = self.get_changed_params(zone.data, want)
+        changed_params, diff = self.get_changed_params(zone.data, want)
 
-        if changed_params and not self.module.check_mode:
-            return True, self.update(zone, changed_params), changed_params
-        else:
+        if diff and not self.module.check_mode:
+            return True, self.update(zone, diff), changed_params
+        elif diff and self.module.check_mode:
             return True, zone, changed_params
-
-        return False, zone
+        elif not diff and not not self.module.check_mode:
+            return False, zone, changed_params
+        else:
+            return False, zone, changed_params
 
     def absent(self, zone):
         """Handles use case where desired state of zone is absent.
