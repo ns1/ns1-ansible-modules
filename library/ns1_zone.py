@@ -423,6 +423,7 @@ class NS1Zone(NS1ModuleBase):
         :rtype: dict
         """
         diff = {}
+        print("THISONE")
         for param, wanted_val in want.items():
             if param not in have:
                 diff[param] = wanted_val
@@ -440,12 +441,13 @@ class NS1Zone(NS1ModuleBase):
 
     def get_changed_params(self, have, want):
         """Gets Ansible params in want that have changed from have
+
         :param have: Existing set of parameters
         :type have: dict
         :param want: Desired end state of parameters
         :type want: dict
         :return: Parameters in want that differ from have
-        :rtype: dict
+        :rtype: tuple(dict, dict)
         """
         diff = self.diff_params(have, want)
         result_diff = {}
@@ -612,7 +614,7 @@ class NS1Zone(NS1ModuleBase):
         :type want: dict
         :return: Tuple in which first value reflects whether or not a change
         occured and second value is new or updated zone object
-        :rtype: tuple(bool, dict)
+        :rtype: tuple(bool, dict, dict)
         """
         changed_params, diff = self.get_changed_params(zone.data, want)
 
