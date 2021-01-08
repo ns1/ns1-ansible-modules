@@ -423,7 +423,6 @@ class NS1Zone(NS1ModuleBase):
         :rtype: dict
         """
         diff = {}
-        print("THISONE")
         for param, wanted_val in want.items():
             if param not in have:
                 diff[param] = wanted_val
