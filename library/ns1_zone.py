@@ -621,8 +621,6 @@ class NS1Zone(NS1ModuleBase):
             return True, self.update(zone, diff), changed_params
         elif diff and self.module.check_mode:
             return True, zone, changed_params
-        elif not diff and not not self.module.check_mode:
-            return False, zone, changed_params
         else:
             return False, zone, changed_params
 
