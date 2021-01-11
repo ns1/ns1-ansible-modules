@@ -585,6 +585,7 @@ class NS1Zone(NS1ModuleBase):
         if state == "absent":
             changed = self.absent(zone)
             zone = {}
+            diff = {}
         return self.build_result(changed, zone, diff)
 
     def present(self, zone):
@@ -599,10 +600,11 @@ class NS1Zone(NS1ModuleBase):
         occured and second value is new or updated zone object
         :rtype: tuple(bool, dict)
         """
+        changed_params = {}
         want = self.sanitize_params(self.module.params)
         if zone:
             return self.update_on_change(zone, want)
-        return True, self.create(want)
+        return True, self.create(want), changed_params
 
     def update_on_change(self, zone, want):
         """triggers update of zone if diff between zone and desired state in want
