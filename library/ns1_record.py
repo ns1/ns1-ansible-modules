@@ -267,6 +267,11 @@ except ImportError:
     # This is handled in NS1 module_utils
     pass
 
+try:
+    import ruamel.yaml as yaml
+except ImportError as err:
+    raise SystemExit('The lib ruamel.yaml is required to use ns1_record module. Please install it.')
+
 RECORD_KEYS_MAP = dict(
     use_client_subnet=dict(appendable=False),
     answers=dict(appendable=True),
@@ -368,8 +373,8 @@ class NS1Record(NS1ModuleBase):
 
     def sanitize_record(self, record):
         """
-        remove fields from the API-returned record that we don't want to
-        pass back, or consider when diffing
+        Remove fields from the API-returned record that we don't want to
+        pass back, or consider when diffing.
         """
         def remove_ids(d):
             if isinstance(d, dict):
@@ -390,8 +395,15 @@ class NS1Record(NS1ModuleBase):
         return record
 
     def get_zone(self):
+        """
+        Used to get the zone associated with the record being worked on.
+        
+        :return to_return: returns the zone specified in module param in playbook/role.
+        :type to_return: str 
+        """
         to_return = None
         try:
+            import epdb; epdb.serve(port=8888)
             to_return = self.ns1.loadZone(self.module.params.get('zone'))
         except ResourceException as re:
             if re.response.code == 404:
@@ -412,6 +424,14 @@ class NS1Record(NS1ModuleBase):
         return to_return
 
     def get_record(self, zone):
+        """
+        Used to look up the record name and type from the specified zone.
+        
+        :param zone: Zone param from module call in ansible playbook/role.
+        :type zone: class str 
+        :return to_return: Sends back two str. One for domain and one for type.
+        :type to_return: str
+        """
         to_return = None
         try:
             to_return = zone.loadRecord(
@@ -461,6 +481,10 @@ class NS1Record(NS1ModuleBase):
         self.module.exit_json(changed=changed, id=record['id'], data=record.data)
 
     def exec_module(self):
+        exec_result = dict(
+            diff={'before': {}, 'after': {}},
+            changed=True
+        )
         state = self.module.params.get('state')
         zone = self.get_zone()
         if zone is None:
@@ -468,21 +492,29 @@ class NS1Record(NS1ModuleBase):
                 self.module.params.get('zone')
             ))
         record = self.get_record(zone)
-
         # record found
         if record:
+            exec_result['diff']['before'].update(
+                {'zone':zone['zone'],
+                'record':record['domain'],
+                'type':record['type']}
+            )
+            # absent param handling
             if state == "absent":
                 if self.module.check_mode:
-                    # short circut in check mode
-                    self.module.exit_json(changed=True)
-
+                    return exec_result
                 record.delete(errback=self.errback_generator())
-                self.module.exit_json(changed=True)
+                return exec_result
+            # present param handling
             else:
                 self.update(zone, record)
+        # record not found
         else:
+            # absent param handling
             if state == "absent":
-                self.module.exit_json(changed=False)
+                exec_result["changed"] = False
+                return exec_result
+            # present param handling
             else:
                 if self.module.check_mode:
                     # short circuit in check mode
