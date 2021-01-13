@@ -494,17 +494,15 @@ class NS1Record(NS1ModuleBase):
                 diff={'before': {}, 'after': {}},
                 changed=changed
             )
-        if record != None:
-            exec_result['diff']['before'].update(
-                {'record':record['domain'],
-                'type':record['type']}
-            )
-        if zone != None:
-            exec_result['diff']['before'].update(
-                {'zone':zone['zone']}
-            )
-        
-        if exec_result:
+            if record != None:
+                exec_result['diff']['before'].update(
+                    {'record':record['domain'],
+                    'type':record['type']}
+                )
+            if zone != None:
+                exec_result['diff']['before'].update(
+                    {'zone':zone['zone']}
+                )
             self.module.exit_json(**exec_result)
         else:
             self.module.exit_json(changed=changed)
