@@ -96,8 +96,8 @@ options:
     default: false
   record_mode:
     description:
-      - Whether existing I(answers) or I(filters) values unspecified in the module
-        should be purged
+      - Whether existing I(answers) or I(filters) values unspecified in the
+        module should be purged
     type: str
     default: purge
     choices:
@@ -270,7 +270,10 @@ except ImportError:
 try:
     import ruamel.yaml as yaml
 except ImportError as err:
-    raise SystemExit('The lib ruamel.yaml is required to use ns1_record module. Please install it.')
+    raise SystemExit(
+        'The lib ruamel.yaml is required to use ns1_record module. Please'
+        'install it.'
+    )
 
 RECORD_KEYS_MAP = dict(
     use_client_subnet=dict(appendable=False),
@@ -316,7 +319,9 @@ class NS1Record(NS1ModuleBase):
                     region=dict(type='str', default=None),
                 ),
             ),
-            ignore_missing_zone=dict(required=False, type='bool', default=False),
+            ignore_missing_zone=dict(
+                required=False, type='bool', default=False
+            ),
             type=dict(required=True, type='str', choices=RECORD_TYPES),
             use_client_subnet=dict(required=False, type='bool', default=None),
             meta=dict(required=False, type='dict', default=None),
@@ -339,12 +344,15 @@ class NS1Record(NS1ModuleBase):
                 default='present',
                 choices=['present', 'absent'],
             ),
-            record_mode=dict(
-                required=False, type='str', default='purge', choices=['append', 'purge']
-            ),
+            record_mode=dict(required=False,
+                             type='str',
+                             default='purge',
+                             choices=['append', 'purge']),
         )
 
-        NS1ModuleBase.__init__(self, self.module_arg_spec, supports_check_mode=True)
+        NS1ModuleBase.__init__(self,
+                               self.module_arg_spec,
+                               supports_check_mode=True)
 
     def filter_empty_subparams(self, param_name):
         param = self.module.params.get(param_name)
@@ -397,9 +405,10 @@ class NS1Record(NS1ModuleBase):
     def get_zone(self):
         """
         Used to get the zone associated with the record being worked on.
-        
-        :return to_return: returns the zone specified in module param in playbook/role.
-        :type to_return: str 
+
+        :return to_return: returns the zone specified in module param in
+                           playbook/role.
+        :type to_return: str
         """
         to_return = None
         try:
@@ -424,17 +433,16 @@ class NS1Record(NS1ModuleBase):
     def get_record(self, zone):
         """
         Used to look up the record name and type from the specified zone.
-        
+
         :param zone: zone name, like 'example.com'
-        :type zone: str 
+        :type zone: str
         :return to_return: Sends back two str. One for domain and one for type.
         :rtype : str
         """
         to_return = None
         try:
-            to_return = zone.loadRecord(
-                self.module.params.get('name'), self.module.params.get('type').upper()
-            )
+            to_return = zone.loadRecord(self.module.params.get('name'),
+                                        self.module.params.get('type').upper())
         except ResourceException as re:
             if re.response.code != 404:
                 self.module.fail_json(
@@ -444,7 +452,9 @@ class NS1Record(NS1ModuleBase):
         return to_return
 
     def update(self, zone, record):
-        # Clean copy of record to preserve IDs for response if no update required
+        """
+        Clean copy of record to preserve IDs for response if no update required
+        """
         record_data = self.sanitize_record(copy.deepcopy(record.data))
         changed = False
         args = {}
@@ -457,7 +467,8 @@ class NS1Record(NS1ModuleBase):
                     RECORD_KEYS_MAP[key]['appendable']
                     and self.module.params.get('record_mode') == 'append'
                 ):
-                    # Create union of input and existing record data, preserving existing order
+                    # Create union of input and existing record data,
+                    # preserving existing order
                     input_data = record_data[key] + [
                         input_obj
                         for input_obj in input_data
@@ -471,23 +482,30 @@ class NS1Record(NS1ModuleBase):
         if self.module.check_mode:
             # check mode short circuit before update
             # self.module.exit_json(changed=changed)
-            self.record_exit(before_change=record_data, changed=changed, after_change=record)
+            self.record_exit(before_change=record_data,
+                             changed=changed,
+                             after_change=record)
 
         if changed:
             # update only if some changed data
-            updated_record = record.update(errback=self.errback_generator(), **args)
+            updated_record = record.update(errback=self.errback_generator(),
+                                           **args)
 
-        self.module.exit_json(changed=changed, id=record['id'], data=record.data)
+        self.module.exit_json(changed=changed,
+                              id=record['id'],
+                              data=record.data)
 
     def record_exit(self, before_change=None, changed=None, after_change=None):
         """
         Central exit point for the module.
-        
-        :param record: Info about the record being worked with in a before change state. 
+
+        :param record: Info about the record being worked with in a before
+                       change state.
         :type : str
-        :param zone: Info about the zone a record belongs to. 
+        :param zone: Info about the zone a record belongs to.
         :type : str
-        :param changed: Tell ansible if there has been a change made and to mark the task accordingly. 
+        :param changed: Tell ansible if there has been a change made and to
+                        mark the task accordingly.
         :type : Bool
         """
         if self.module._diff:
@@ -495,18 +513,17 @@ class NS1Record(NS1ModuleBase):
                 diff={'before': {}, 'after': {}},
                 changed=changed
             )
-            if before_change != None:
+            if before_change is not None:
                 exec_result['diff']['before'].update(
-                    {'record':before_change}
+                    {'record': before_change}
                 )
-            if after_change != None:
+            if after_change is not None:
                 exec_result['diff']['after'].update(
-                    {'record':after_change}
+                    {'record': after_change}
                 )
             self.module.exit_json(**exec_result)
 
         self.module.exit_json(changed=changed)
-
 
     def exec_module(self):
         state = self.module.params.get('state')
@@ -528,7 +545,8 @@ class NS1Record(NS1ModuleBase):
                 record.delete(errback=self.errback_generator())
                 # self.module.exit_json(changed=True)
                 self.record_exit(before_change=record.data, changed=True)
-            # present param handling - Create and update go down the same path when record is found.
+            # present param handling - Create and update go down the same
+            # path when record is found.
             else:
                 self.update(zone, record)
         # record not found
