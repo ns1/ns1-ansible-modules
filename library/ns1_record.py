@@ -470,15 +470,16 @@ class NS1Record(NS1ModuleBase):
 
         if self.module.check_mode:
             # check mode short circuit before update
-            self.module.exit_json(changed=changed)
+            # self.module.exit_json(changed=changed)
+            self.record_exit(before_change=record_data, changed=changed, after_change=record)
 
         if changed:
             # update only if some changed data
-            record = record.update(errback=self.errback_generator(), **args)
+            updated_record = record.update(errback=self.errback_generator(), **args)
 
         self.module.exit_json(changed=changed, id=record['id'], data=record.data)
 
-    def record_exit(self, record=None, zone=None, changed=True):
+    def record_exit(self, before_change=None, changed=None, after_change=None):
         """
         Central exit point for the module.
         
@@ -494,18 +495,17 @@ class NS1Record(NS1ModuleBase):
                 diff={'before': {}, 'after': {}},
                 changed=changed
             )
-            if record != None:
+            if before_change != None:
                 exec_result['diff']['before'].update(
-                    {'record':record['domain'],
-                    'type':record['type']}
+                    {'record':before_change}
                 )
-            if zone != None:
-                exec_result['diff']['before'].update(
-                    {'zone':zone['zone']}
+            if after_change != None:
+                exec_result['diff']['after'].update(
+                    {'record':after_change}
                 )
             self.module.exit_json(**exec_result)
-        else:
-            self.module.exit_json(changed=changed)
+
+        self.module.exit_json(changed=changed)
 
 
     def exec_module(self):
@@ -516,7 +516,6 @@ class NS1Record(NS1ModuleBase):
                 self.module.params.get('zone')
             ))
         record = self.get_record(zone)
-
         # record found
         if record:
             # absent param handling
@@ -524,12 +523,12 @@ class NS1Record(NS1ModuleBase):
                 if self.module.check_mode:
                     # short circut in check mode
                     # self.module.exit_json(changed=True)
-                    self.record_exit(record, zone)
+                    self.record_exit(before_change=record.data, changed=True)
 
                 record.delete(errback=self.errback_generator())
                 # self.module.exit_json(changed=True)
-                self.record_exit(record, zone)
-            # present param handling
+                self.record_exit(before_change=record.data, changed=True)
+            # present param handling - Create and update go down the same path when record is found.
             else:
                 self.update(zone, record)
         # record not found
@@ -537,24 +536,24 @@ class NS1Record(NS1ModuleBase):
             # absent param handling
             if state == "absent":
                 self.module.exit_json(changed=False)
-            # present param handling
+            # present param handling - Create tasks go down this path.
             else:
                 if self.module.check_mode:
                     # short circuit in check mode
                     # self.module.exit_json(changed=True)
-                    self.record_exit()
+                    record = self.module.params
+                    self.record_exit(changed=True, after_change=record)
 
                 method_to_call = getattr(
                     zone, 'add_%s' % (self.module.params.get('type').upper())
                 )
-
                 record = method_to_call(
                     self.module.params.get('name'),
                     self.filter_empty_subparams('answers'),
                     errback=self.errback_generator(),
                     **self.api_params()
                 )
-                self.module.exit_json(changed=True, id=record['id'], data=record.data)
+                self.record_exit(changed=True, after_change=record.data)
 
 
 def main():
