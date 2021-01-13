@@ -403,7 +403,6 @@ class NS1Record(NS1ModuleBase):
         """
         to_return = None
         try:
-            import epdb; epdb.serve(port=8888)
             to_return = self.ns1.loadZone(self.module.params.get('zone'))
         except ResourceException as re:
             if re.response.code == 404:
@@ -420,17 +419,16 @@ class NS1Record(NS1ModuleBase):
                 self.module.fail_json(
                     msg="error code %s - %s " % (re.response.code, re.message)
                 )
-
         return to_return
 
     def get_record(self, zone):
         """
         Used to look up the record name and type from the specified zone.
         
-        :param zone: Zone param from module call in ansible playbook/role.
-        :type zone: class str 
+        :param zone: zone name, like 'example.com'
+        :type zone: str 
         :return to_return: Sends back two str. One for domain and one for type.
-        :type to_return: str
+        :rtype : str
         """
         to_return = None
         try:
@@ -480,11 +478,39 @@ class NS1Record(NS1ModuleBase):
 
         self.module.exit_json(changed=changed, id=record['id'], data=record.data)
 
+    def record_exit(self, record=None, zone=None, changed=True):
+        """
+        Central exit point for the module.
+        
+        :param record: Info about the record being worked with in a before change state. 
+        :type : str
+        :param zone: Info about the zone a record belongs to. 
+        :type : str
+        :param changed: Tell ansible if there has been a change made and to mark the task accordingly. 
+        :type : Bool
+        """
+        if self.module._diff:
+            exec_result = dict(
+                diff={'before': {}, 'after': {}},
+                changed=changed
+            )
+        if record != None:
+            exec_result['diff']['before'].update(
+                {'record':record['domain'],
+                'type':record['type']}
+            )
+        if zone != None:
+            exec_result['diff']['before'].update(
+                {'zone':zone['zone']}
+            )
+        
+        if exec_result:
+            self.module.exit_json(**exec_result)
+        else:
+            self.module.exit_json(changed=changed)
+
+
     def exec_module(self):
-        exec_result = dict(
-            diff={'before': {}, 'after': {}},
-            changed=True
-        )
         state = self.module.params.get('state')
         zone = self.get_zone()
         if zone is None:
@@ -492,19 +518,19 @@ class NS1Record(NS1ModuleBase):
                 self.module.params.get('zone')
             ))
         record = self.get_record(zone)
+
         # record found
         if record:
-            exec_result['diff']['before'].update(
-                {'zone':zone['zone'],
-                'record':record['domain'],
-                'type':record['type']}
-            )
             # absent param handling
             if state == "absent":
                 if self.module.check_mode:
-                    return exec_result
+                    # short circut in check mode
+                    # self.module.exit_json(changed=True)
+                    self.record_exit(record, zone)
+
                 record.delete(errback=self.errback_generator())
-                return exec_result
+                # self.module.exit_json(changed=True)
+                self.record_exit(record, zone)
             # present param handling
             else:
                 self.update(zone, record)
@@ -512,13 +538,13 @@ class NS1Record(NS1ModuleBase):
         else:
             # absent param handling
             if state == "absent":
-                exec_result["changed"] = False
-                return exec_result
+                self.module.exit_json(changed=False)
             # present param handling
             else:
                 if self.module.check_mode:
                     # short circuit in check mode
-                    self.module.exit_json(changed=True)
+                    # self.module.exit_json(changed=True)
+                    self.record_exit()
 
                 method_to_call = getattr(
                     zone, 'add_%s' % (self.module.params.get('type').upper())
@@ -535,8 +561,7 @@ class NS1Record(NS1ModuleBase):
 
 def main():
     r = NS1Record()
-    result = r.exec_module()
-    r.module.exit_json(**result)
+    r.exec_module()
 
 
 if __name__ == '__main__':
