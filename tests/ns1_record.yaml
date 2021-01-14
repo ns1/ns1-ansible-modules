@@ -41,7 +41,7 @@
         assert:
           that:
             - a_record_create is changed
-            - a_record_create.data.answers[0].answer[0] == "192.168.1.0"
+            - a_record_create.record.answers[0].answer[0] == "192.168.1.0"
 
       - name: Test answer append
         local_action:
@@ -66,9 +66,9 @@
         assert:
           that:
             - a_answer_append is changed
-            - a_answer_append.data.answers[0].answer[0] == "192.168.1.0"
-            - a_answer_append.data.answers[1].answer[0] == "192.168.1.1"
-            - a_answer_append.data.answers | length == 2
+            - a_answer_append.record.answers[0].answer[0] == "192.168.1.0"
+            - a_answer_append.record.answers[1].answer[0] == "192.168.1.1"
+            - a_answer_append.record.answers | length == 2
 
       - name: Test record no change
         local_action:
@@ -93,8 +93,8 @@
         assert:
           that:
             - a_record_no_change is not changed
-            - a_record_no_change.data.answers[1].answer[0] == "192.168.1.1"
-            - a_record_no_change.data.answers | length == 2
+            - a_record_no_change.record.answers[1].answer[0] == "192.168.1.1"
+            - a_record_no_change.record.answers | length == 2
 
       - name: Test answer update with purge
         local_action:
@@ -118,8 +118,8 @@
         assert:
           that:
             - a_answer_update_purge is changed
-            - a_answer_update_purge.data.answers[0].answer[0] == "192.168.2.1"
-            - a_answer_update_purge.data.answers | length == 1
+            - a_answer_update_purge.record.answers[0].answer[0] == "192.168.2.1"
+            - a_answer_update_purge.record.answers | length == 1
 
       - name: Test filter append
         ns1_record:
@@ -139,9 +139,9 @@
         assert:
           that:
             - a_filter_append is changed
-            - a_filter_append.data.answers[0].answer[0] == "192.168.2.1"
-            - a_filter_append.data.filters[0].filter == "up"
-            - a_filter_append.data.filters[1].filter == "geotarget_regional"
+            - a_filter_append.record.answers[0].answer[0] == "192.168.2.1"
+            - a_filter_append.record.filters[0].filter == "up"
+            - a_filter_append.record.filters[1].filter == "geotarget_regional"
 
       - name: Test filter purge
         local_action:
@@ -160,7 +160,7 @@
         assert:
           that:
             - a_filter_purge is changed
-            - a_filter_purge.data.filters | length == 0
+            - a_filter_purge.record.filters | length == 0
 
       - name: Test meta update
         local_action:
@@ -182,8 +182,8 @@
         assert:
           that:
             - a_meta_update is changed
-            - a_meta_update.data.answers[0].answer[0] == "192.168.2.1"
-            - a_meta_update.data.answers | length == 1
+            - a_meta_update.record.answers[0].answer[0] == "192.168.2.1"
+            - a_meta_update.record.answers | length == 1
 
       - name: Test answer purge
         local_action:
@@ -201,7 +201,7 @@
         assert:
           that:
             - a_answer_purge is changed
-            - a_answer_purge.data.answers | length == 0
+            - a_answer_purge.record.answers | length == 0
 
       - name: Test record deletion
         local_action:
