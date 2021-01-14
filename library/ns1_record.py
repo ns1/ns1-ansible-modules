@@ -560,7 +560,7 @@ class NS1Record(NS1ModuleBase):
         self.module.exit_json(changed=changed)
 
     def exec_module(self):
-        """Method called by main to handle record state logic handling.
+        """Method called by main to handle record state logic.
         """
         state = self.module.params.get('state')
         zone = self.get_zone()
