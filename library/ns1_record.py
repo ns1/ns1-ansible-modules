@@ -1,7 +1,8 @@
 #!/usr/bin/python
 
 # Copyright: (c) 2019, Matthew Burtless <mburtless@ns1.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see COPYING or
+# https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
 
@@ -269,7 +270,7 @@ except ImportError:
 
 try:
     import ruamel.yaml as yaml
-except ImportError as err:
+except ImportError:
     raise SystemExit(
         'The lib ruamel.yaml is required to use ns1_record module. Please'
         'install it.'
