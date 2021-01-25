@@ -1,0 +1,3 @@
+ns1-python==0.16.0
+pytest==6.2.1
+ruamel.yaml==0.16.12

@@ -357,9 +357,15 @@ def test_create(mock_zone_create, ns1_config):
 def test_present(mock_create, mock_update_on_change, mock_zone, exp_changed):
     mock_update_on_change.return_value = (exp_changed, mock_zone)
     z = ns1_zone.NS1Zone()
-    changed, zone = z.present(mock_zone)
+    test_present = z.present(mock_zone)
+    diff = {}
+    if len(test_present) == 2:
+        changed, zone = test_present
+    else:
+        changed, zone, diff = test_present
     assert changed == exp_changed
     assert zone is not None
+    assert isinstance(diff, dict)
     if mock_zone:
         mock_create.assert_not_called()
         mock_update_on_change.assert_called_once()

@@ -1,5 +1,5 @@
-#!/usr/bin/python
 
+#!/usr/bin/python
 # Copyright: (c) 2020, NS1
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
@@ -449,7 +449,6 @@ class NS1Zone(NS1ModuleBase):
         :rtype: tuple(dict, dict)
         """
         diff = self.diff_params(have, want)
-        result_diff = {}
 
         # perform deep comparison of secondaries if primary exists and has diff
         if "primary" in have and "primary" in diff:
@@ -488,7 +487,7 @@ class NS1Zone(NS1ModuleBase):
             return result_diff, diff
 
         else:
-            return result_diff, diff
+            return {}, diff
 
     def diff_in_secondaries(self, have_secondaries, want_secondaries):
         """Performs deep comparison of two lists of secondaries, ignoring order.
@@ -598,13 +597,25 @@ class NS1Zone(NS1ModuleBase):
         :type zone: dict, optional
         :return: Tuple in which first value reflects whether or not a change
         occured and second value is new or updated zone object
-        :rtype: tuple(bool, dict)
+        :rtype: tuple(bool, dict, dict)
         """
-        changed_params = {}
         want = self.sanitize_params(self.module.params)
         if zone:
+            # only if zone already exists
             return self.update_on_change(zone, want)
-        return True, self.create(want), changed_params
+        else:
+            # only if zone does not exist
+            for param, value in self.module.params.items():
+                if param not in want:
+                    want[param] = value
+                else:
+                    if want[param] != value:
+                        want[param] = value
+            changed_params = {
+                "before": {},
+                "after": want
+            }
+            return True, self.create(want), changed_params
 
     def update_on_change(self, zone, want):
         """triggers update of zone if diff between zone and desired state in want
@@ -618,13 +629,11 @@ class NS1Zone(NS1ModuleBase):
         :rtype: tuple(bool, dict, dict)
         """
         changed_params, diff = self.get_changed_params(zone.data, want)
-
         if diff and not self.module.check_mode:
             return True, self.update(zone, diff), changed_params
         elif diff and self.module.check_mode:
             return True, zone, changed_params
-        else:
-            return False, zone, changed_params
+        return False, zone, changed_params
 
     def absent(self, zone):
         """Handles use case where desired state of zone is absent.
