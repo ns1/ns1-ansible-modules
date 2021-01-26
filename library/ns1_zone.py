@@ -1,5 +1,4 @@
 #!/usr/bin/python
-
 # Copyright: (c) 2020, NS1
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
@@ -243,6 +242,8 @@ RETURN = r"""
 
 import functools  # noqa
 
+import ruamel.yaml as yaml
+
 try:
     from ansible.module_utils.ns1 import NS1ModuleBase, HAS_NS1, Decorators
 except ImportError:
@@ -444,22 +445,48 @@ class NS1Zone(NS1ModuleBase):
         :param want: Desired end state of parameters
         :type want: dict
         :return: Parameters in want that differ from have
-        :rtype: dict
+        :rtype: tuple(dict, dict)
         """
         diff = self.diff_params(have, want)
+
         # perform deep comparison of secondaries if primary exists and has diff
         if "primary" in have and "primary" in diff:
             have_secondaries = have["primary"].get("secondaries")
             want_secondaries = want["primary"].get("secondaries")
+
             # if no difference in values, remove secondaries from diff results
             if not self.diff_in_secondaries(
                 have_secondaries, want_secondaries
             ):
                 diff["primary"].pop("secondaries", None)
+
                 # if secondaries was only key in primary, remove primary
                 if not diff["primary"]:
                     diff.pop("primary", None)
-        return diff
+
+        if self.module._diff:
+
+            # build after dict from have with updated changes
+            after = {}
+            for param in have:
+                if param not in diff:
+                    after[param] = have[param]
+                else:
+                    after[param] = diff[param]
+
+            # convert dictionaries to yaml txt dump
+            have_yaml = yaml.safe_dump(have, default_flow_style=False)
+            diff_yaml = yaml.safe_dump(after, default_flow_style=False)
+
+            # build diff from different yaml dumps
+            result_diff = dict(
+                before=have_yaml,
+                after=diff_yaml
+            )
+            return result_diff, diff
+
+        else:
+            return {}, diff
 
     def diff_in_secondaries(self, have_secondaries, want_secondaries):
         """Performs deep comparison of two lists of secondaries, ignoring order.
@@ -552,11 +579,12 @@ class NS1Zone(NS1ModuleBase):
         state = self.module.params.get("state")
         zone = self.get_zone(self.module.params.get("name"))
         if state == "present":
-            changed, zone = self.present(zone)
+            changed, zone, diff = self.present(zone)
         if state == "absent":
             changed = self.absent(zone)
             zone = {}
-        return self.build_result(changed, zone)
+            diff = {}
+        return self.build_result(changed, zone, diff)
 
     def present(self, zone):
         """Handles use case where desired state of zone is present.
@@ -568,12 +596,26 @@ class NS1Zone(NS1ModuleBase):
         :type zone: dict, optional
         :return: Tuple in which first value reflects whether or not a change
         occured and second value is new or updated zone object
-        :rtype: tuple(bool, dict)
+        :rtype: tuple(bool, dict, dict)
         """
         want = self.sanitize_params(self.module.params)
         if zone:
+            # only if zone already exists
             return self.update_on_change(zone, want)
-        return True, self.create(want)
+        else:
+            # only if zone does not exist
+            for param, value in self.module.params.items():
+                if param not in want:
+                    if value is not None:
+                        want[param] = value
+                else:
+                    if want[param] != value:
+                        want[param] = value
+            changed_params = {
+                "before": {},
+                "after": want
+            }
+            return True, self.create(want), changed_params
 
     def update_on_change(self, zone, want):
         """triggers update of zone if diff between zone and desired state in want
@@ -584,12 +626,14 @@ class NS1Zone(NS1ModuleBase):
         :type want: dict
         :return: Tuple in which first value reflects whether or not a change
         occured and second value is new or updated zone object
-        :rtype: tuple(bool, dict)
+        :rtype: tuple(bool, dict, dict)
         """
-        changed_params = self.get_changed_params(zone.data, want)
-        if changed_params:
-            return True, self.update(zone, changed_params)
-        return False, zone
+        changed_params, diff = self.get_changed_params(zone.data, want)
+        if diff and not self.module.check_mode:
+            return True, self.update(zone, diff), changed_params
+        elif diff and self.module.check_mode:
+            return True, zone, changed_params
+        return False, zone, changed_params
 
     def absent(self, zone):
         """Handles use case where desired state of zone is absent.
@@ -606,7 +650,7 @@ class NS1Zone(NS1ModuleBase):
 
         return False
 
-    def build_result(self, changed, zone):
+    def build_result(self, changed, zone, diff):
         """Builds dict of results from module execution to pass to module.exit_json()
 
         :param changed: Whether or not a change occured
@@ -617,6 +661,10 @@ class NS1Zone(NS1ModuleBase):
         :rtype: dict
         """
         result = {"changed": changed}
+
+        if diff and self.module._diff:
+            result["diff"] = diff
+
         if zone and not self.module.check_mode:
             result["id"] = zone["id"]
             result["zone"] = zone.data

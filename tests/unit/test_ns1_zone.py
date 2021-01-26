@@ -104,7 +104,7 @@ def test_get_changed_params(mock_diff_in_secondaries, mock_diff_params):
     mock_diff_in_secondaries.return_value = False
     diff = z.get_changed_params(have, want)
     mock_diff_in_secondaries.assert_called_once()
-    assert diff == {}
+    assert diff == ({}, {})
 
 
 @pytest.mark.parametrize(
@@ -357,9 +357,15 @@ def test_create(mock_zone_create, ns1_config):
 def test_present(mock_create, mock_update_on_change, mock_zone, exp_changed):
     mock_update_on_change.return_value = (exp_changed, mock_zone)
     z = ns1_zone.NS1Zone()
-    changed, zone = z.present(mock_zone)
+    test_present = z.present(mock_zone)
+    diff = {}
+    if len(test_present) == 2:
+        changed, zone = test_present
+    else:
+        changed, zone, diff = test_present
     assert changed == exp_changed
     assert zone is not None
+    assert isinstance(diff, dict)
     if mock_zone:
         mock_create.assert_not_called()
         mock_update_on_change.assert_called_once()
@@ -382,10 +388,10 @@ def test_update_on_change(
 ):
     mock_zone = Mock()
     mock_want = Mock()
-    mock_get_changed_params.return_value = diff
+    mock_get_changed_params.return_value = (diff, diff)
     mock_update.return_value = diff
     z = ns1_zone.NS1Zone()
-    changed, zone = z.update_on_change(mock_zone, mock_want)
+    changed, zone, changed_params = z.update_on_change(mock_zone, mock_want)
     assert changed == exp_changed
     if exp_changed:
         assert zone != mock_zone
@@ -439,5 +445,5 @@ def test_build_result(zone_data, changed, check_mode, exp_result, ns1_config):
         mock_zone.data = m.get_zone_data(**zone_data)
     z = ns1_zone.NS1Zone()
     z.module.check_mode = check_mode
-    result = z.build_result(changed, mock_zone)
+    result = z.build_result(changed, mock_zone, changed)
     assert result == exp_result
