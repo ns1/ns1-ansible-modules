@@ -606,7 +606,8 @@ class NS1Zone(NS1ModuleBase):
             # only if zone does not exist
             for param, value in self.module.params.items():
                 if param not in want:
-                    want[param] = value
+                    if value is not None:
+                        want[param] = value
                 else:
                     if want[param] != value:
                         want[param] = value
