@@ -572,7 +572,6 @@ class NS1Record(NS1ModuleBase):
             if state == "absent":
                 if self.module.check_mode:
                     # short circut in check mode
-                    # self.module.exit_json(changed=True)
                     self.record_exit(before=record.data,
                                      changed=True, record=record)
                 record.delete(errback=self.errback_generator())
