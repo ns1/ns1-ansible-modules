@@ -255,6 +255,7 @@ RETURN = '''
 '''
 
 import copy  # noqa
+import ruamel.yaml as yaml
 
 try:
     from ansible.module_utils.ns1 import NS1ModuleBase
@@ -267,14 +268,6 @@ try:
 except ImportError:
     # This is handled in NS1 module_utils
     pass
-
-try:
-    import ruamel.yaml as yaml
-except ImportError:
-    raise SystemExit(
-        'The lib ruamel.yaml is required to use ns1_record module. Please'
-        'install it.'
-    )
 
 RECORD_KEYS_MAP = dict(
     use_client_subnet=dict(appendable=False),
@@ -501,10 +494,10 @@ class NS1Record(NS1ModuleBase):
                     args[key] = input_data
 
         # create a new copy of the previously sanitized dict that will be updated with chaning args to support --diff
-        after_changes = record_data.copy()
+        after_changes = copy.deepcopy(record_data)
         for k, v in args.items():
-            if after_changes[k] is not v:
-                after_changes[k] = v
+            if after_changes[k] != v:
+              after_changes[k] = v
 
         # check mode short circuit before update
         if self.module.check_mode:
@@ -553,14 +546,17 @@ class NS1Record(NS1ModuleBase):
             if changed is not None:
                 exec_result['changed'] = changed
             if record is not None:
-                exec_result['record'] = record.data
+                try:
+                    exec_result['record'] = record.data
+                except AttributeError:
+                    exec_result['record'] = record
             self.module.exit_json(**exec_result)
 
         # catch if the module is not being run with --diff
         self.module.exit_json(changed=changed)
 
     def exec_module(self):
-        """Method called by main to handle record state logic.
+        """Method called by main to handle record state logic handling.
         """
         state = self.module.params.get('state')
         zone = self.get_zone()
