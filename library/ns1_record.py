@@ -375,7 +375,7 @@ class NS1Record(NS1ModuleBase):
         return filtered
 
     def api_params(self):
-        """Sets up other paramters for the api call that may not be specified
+        """Sets up other parameters for the api call that may not be specified
            in the modules from tasks file.
 
         :return: Default params if they are not specified in the module but
@@ -465,7 +465,7 @@ class NS1Record(NS1ModuleBase):
     def update(self, record):
         """Used to handle records with values changing.
 
-        :param record: JSON record information from the API. 
+        :param record: JSON record information from the API.
         :type record: Obj
         """
         # clean copy of record to preserve IDs for response if no update required
@@ -493,11 +493,12 @@ class NS1Record(NS1ModuleBase):
                     changed = True
                     args[key] = input_data
 
-        # create a new copy of the previously sanitized dict that will be updated with chaning args to support --diff
+        # create a new copy of the previously sanitized dict that will be
+        # updated with changing args to support --diff
         after_changes = copy.deepcopy(record_data)
         for k, v in args.items():
             if after_changes[k] != v:
-              after_changes[k] = v
+                after_changes[k] = v
 
         # check mode short circuit before update
         if self.module.check_mode:
