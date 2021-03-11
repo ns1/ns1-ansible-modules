@@ -1,7 +1,8 @@
 #!/usr/bin/python
 
 # Copyright: (c) 2019, Matthew Burtless <mburtless@ns1.com>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+ (see COPYING or
+# https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
 
@@ -96,8 +97,8 @@ options:
     default: false
   record_mode:
     description:
-      - Whether existing I(answers) or I(filters) values unspecified in the module
-        should be purged
+      - Whether existing I(answers) or I(filters) values unspecified in the
+        module should be purged
     type: str
     default: purge
     choices:
@@ -254,6 +255,7 @@ RETURN = '''
 '''
 
 import copy  # noqa
+import ruamel.yaml as yaml
 
 try:
     from ansible.module_utils.ns1 import NS1ModuleBase
@@ -311,7 +313,9 @@ class NS1Record(NS1ModuleBase):
                     region=dict(type='str', default=None),
                 ),
             ),
-            ignore_missing_zone=dict(required=False, type='bool', default=False),
+            ignore_missing_zone=dict(
+                required=False, type='bool', default=False
+            ),
             type=dict(required=True, type='str', choices=RECORD_TYPES),
             use_client_subnet=dict(required=False, type='bool', default=None),
             meta=dict(required=False, type='dict', default=None),
@@ -334,14 +338,26 @@ class NS1Record(NS1ModuleBase):
                 default='present',
                 choices=['present', 'absent'],
             ),
-            record_mode=dict(
-                required=False, type='str', default='purge', choices=['append', 'purge']
-            ),
+            record_mode=dict(required=False,
+                             type='str',
+                             default='purge',
+                             choices=['append', 'purge']),
         )
 
-        NS1ModuleBase.__init__(self, self.module_arg_spec, supports_check_mode=True)
+        NS1ModuleBase.__init__(self,
+                               self.module_arg_spec,
+                               supports_check_mode=True)
 
     def filter_empty_subparams(self, param_name):
+        """Used to remove any possible empty module params passed in from a
+           task file.
+
+        :param param_name: Name of the parameter being passed into the module.
+                           Ie zone.
+        :type param_name: Any
+        :return: Paramaters that are not empty.
+        :rtype: list
+        """
         param = self.module.params.get(param_name)
         filtered = []
         if isinstance(param, list):
@@ -359,6 +375,13 @@ class NS1Record(NS1ModuleBase):
         return filtered
 
     def api_params(self):
+        """Sets up other paramters for the api call that may not be specified
+           in the modules from tasks file.
+
+        :return: Default params if they are not specified in the module but
+                 required by the API.
+        :rtype: dict
+        """
         params = dict(
             (key, self.module.params.get(key))
             for key, value in RECORD_KEYS_MAP.items()
@@ -367,9 +390,13 @@ class NS1Record(NS1ModuleBase):
         return params
 
     def sanitize_record(self, record):
-        """
-        remove fields from the API-returned record that we don't want to
-        pass back, or consider when diffing
+        """Remove fields from the API-returned record that we don't want to
+        pass back, or consider when diffing.
+
+        :param record: JSON record information from the API.
+        :type record: Any
+        :return: Record sans ID info.
+        :rtype: list | dict | any
         """
         def remove_ids(d):
             if isinstance(d, dict):
@@ -390,6 +417,11 @@ class NS1Record(NS1ModuleBase):
         return record
 
     def get_zone(self):
+        """Used to get the zone associated with the record being worked on.
+
+        :return: returns the zone specified in module param in playbook/role.
+        :rtype: str
+        """
         to_return = None
         try:
             to_return = self.ns1.loadZone(self.module.params.get('zone'))
@@ -408,15 +440,20 @@ class NS1Record(NS1ModuleBase):
                 self.module.fail_json(
                     msg="error code %s - %s " % (re.response.code, re.message)
                 )
-
         return to_return
 
     def get_record(self, zone):
+        """Used to look up the record name and type from the specified zone.
+
+        :param zone: Zone name, like 'example.com'.
+        :type zone: str
+        :return: ends back two str. One for domain and one for type.
+        :rtype: str
+        """
         to_return = None
         try:
-            to_return = zone.loadRecord(
-                self.module.params.get('name'), self.module.params.get('type').upper()
-            )
+            to_return = zone.loadRecord(self.module.params.get('name'),
+                                        self.module.params.get('type').upper())
         except ResourceException as re:
             if re.response.code != 404:
                 self.module.fail_json(
@@ -425,8 +462,13 @@ class NS1Record(NS1ModuleBase):
                 to_return = None
         return to_return
 
-    def update(self, zone, record):
-        # Clean copy of record to preserve IDs for response if no update required
+    def update(self, record):
+        """Used to handle records with values changing.
+
+        :param record: JSON record information from the API. 
+        :type record: Obj
+        """
+        # clean copy of record to preserve IDs for response if no update required
         record_data = self.sanitize_record(copy.deepcopy(record.data))
         changed = False
         args = {}
@@ -439,7 +481,8 @@ class NS1Record(NS1ModuleBase):
                     RECORD_KEYS_MAP[key]['appendable']
                     and self.module.params.get('record_mode') == 'append'
                 ):
-                    # Create union of input and existing record data, preserving existing order
+                    # create union of input and existing record data,
+                    # preserving existing order
                     input_data = record_data[key] + [
                         input_obj
                         for input_obj in input_data
@@ -450,17 +493,71 @@ class NS1Record(NS1ModuleBase):
                     changed = True
                     args[key] = input_data
 
+        # create a new copy of the previously sanitized dict that will be updated with chaning args to support --diff
+        after_changes = copy.deepcopy(record_data)
+        for k, v in args.items():
+            if after_changes[k] != v:
+              after_changes[k] = v
+
+        # check mode short circuit before update
         if self.module.check_mode:
-            # check mode short circuit before update
-            self.module.exit_json(changed=changed)
+            self.record_exit(before=record_data,
+                             changed=changed,
+                             after=after_changes,
+                             record=record)
 
+        # update only if some changed data
         if changed:
-            # update only if some changed data
-            record = record.update(errback=self.errback_generator(), **args)
+            record.update(errback=self.errback_generator(),
+                          **args)
 
-        self.module.exit_json(changed=changed, id=record['id'], data=record.data)
+            self.record_exit(before=record_data,
+                             changed=changed,
+                             after=after_changes,
+                             record=record)
+
+        # catch exit if not running in check mode and no changes are to be made.
+        self.record_exit(changed=False, record=record)
+
+    def record_exit(self, after=None, before=None, changed=None, record=None):
+        """Central exit point for the module.
+
+        :param record: Info about the record being worked with in a before
+                       change state.
+        :type : str
+        :param zone: Info about the zone a record belongs to.
+        :type : str
+        :param changed: Tell ansible if there has been a change made and to
+                        mark the task accordingly.
+        :type : Bool
+        """
+        # convert dictionaries to yaml txt dump
+        before_yaml = yaml.safe_dump(before, default_flow_style=False)
+        after_yaml = yaml.safe_dump(after, default_flow_style=False)
+
+        # build the final dict to pass into exit_json
+        if self.module._diff:
+            exec_result = dict(
+                diff={'before': {}, 'after': {}})
+            if after is not None:
+                exec_result['diff']['after'] = after_yaml
+            if before is not None:
+                exec_result['diff']['before'] = before_yaml
+            if changed is not None:
+                exec_result['changed'] = changed
+            if record is not None:
+                try:
+                    exec_result['record'] = record.data
+                except AttributeError:
+                    exec_result['record'] = record
+            self.module.exit_json(**exec_result)
+
+        # catch if the module is not being run with --diff
+        self.module.exit_json(changed=changed)
 
     def exec_module(self):
+        """Method called by main to handle record state logic handling.
+        """
         state = self.module.params.get('state')
         zone = self.get_zone()
         if zone is None:
@@ -471,40 +568,50 @@ class NS1Record(NS1ModuleBase):
 
         # record found
         if record:
+            # absent param handling
             if state == "absent":
                 if self.module.check_mode:
                     # short circut in check mode
-                    self.module.exit_json(changed=True)
-
+                    self.record_exit(before=record.data,
+                                     changed=True, record=record)
                 record.delete(errback=self.errback_generator())
-                self.module.exit_json(changed=True)
+                self.record_exit(before=record.data,
+                                 changed=True, record=record)
+            # present param handling - Create and update go down the same
+            # path when record is found.
             else:
-                self.update(zone, record)
+                self.update(record)
+
+        # record not found
         else:
+            # absent param handling
             if state == "absent":
                 self.module.exit_json(changed=False)
+            # present param handling - Create tasks go down this path.
             else:
+                # short circuit in check mode
                 if self.module.check_mode:
-                    # short circuit in check mode
-                    self.module.exit_json(changed=True)
+                    # setting record to module params as nothing has been
+                    # returned from the API to use for --diff
+                    record = self.module.params
+                    self.record_exit(changed=True, after=record, record=record)
 
                 method_to_call = getattr(
                     zone, 'add_%s' % (self.module.params.get('type').upper())
                 )
-
                 record = method_to_call(
                     self.module.params.get('name'),
                     self.filter_empty_subparams('answers'),
                     errback=self.errback_generator(),
                     **self.api_params()
                 )
-                self.module.exit_json(changed=True, id=record['id'], data=record.data)
+                self.record_exit(
+                    changed=True, after=record.data, record=record)
 
 
 def main():
     r = NS1Record()
-    result = r.exec_module()
-    r.module.exit_json(**result)
+    r.exec_module()
 
 
 if __name__ == '__main__':
