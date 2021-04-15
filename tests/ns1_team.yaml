@@ -59,14 +59,6 @@
           - team_ip_whitelist is changed
           - team_ip_whitelist.diff.after.ip_whitelist | length != 0
 
-    - name: Printing out hostvars
-      debug:
-        var: team_ip_whitelist
-      tags:
-        - debug_info
-        - always
-
-
     ##########
     # Test team permissions update: monitoring
     ##########
