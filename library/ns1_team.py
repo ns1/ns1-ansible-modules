@@ -16,7 +16,7 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = r"""
 ---
-module: ns1_zone
+module: ns1_team
 
 short_description: Create, modify and delete NS1 account teams.
 
