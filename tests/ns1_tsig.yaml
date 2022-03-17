@@ -1,0 +1,65 @@
+---
+  - hosts: localhost
+
+    tasks:
+      ##########
+      # Verify test tsig are absent
+      ##########
+      - name: setup
+        local_action:
+          module: ns1_tsig
+          apiKey: "{{ ns1_token }}"
+          key_name: "{{ keyname }}"
+          algorithm: "{{algo}}"
+          secret: "{{secret}}"
+          state: absent
+        register: tsig_setup
+
+      - name: Verify setup
+        assert:
+          that:
+            - tsig_setup is success
+
+      ##########
+      # Test normal tsig behaviour
+      ##########
+      - name: Test tsig creation
+        local_action:
+          module: ns1_tsig
+          apiKey: "{{ ns1_token }}"
+          key_name: "{{ keyname }}"
+          algorithm: "{{algo}}"
+          secret: "{{secret}}"
+          state: present
+        register: tsig_create
+
+      - name: Verify tsig creation
+        assert:
+          that:
+            - tsig_create is changed
+            - tsig_create.name == "{{keyname|lower}}."
+
+      - name: Test tsig update
+        local_action:
+          module: ns1_tsig
+          apiKey: "{{ ns1_token }}"
+          key_name: "{{ keyname }}"
+          algorithm: "hmac-sha224"
+          secret: "c2VjcmV0"
+          state: present
+        register: tsig_updated
+
+      - name: Verify tsig updated
+        assert:
+          that:
+            - tsig_updated is changed
+            - tsig_updated.algorithm == "hmac-sha224"
+            - tsig_updated.secret == "c2VjcmV0"
+
+
+      - name: Delete tsig
+        local_action:
+          module: ns1_tsig
+          apiKey: "{{ ns1_token }}"
+          key_name: "{{ keyname }}"
+          state: absent
