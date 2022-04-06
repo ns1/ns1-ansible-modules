@@ -1,3 +1,7 @@
+## 3.0.2 (March 30, 2022)
+ENHANCEMENTS:
+* Adds support for TSIG
+
 ## 3.0.1 (January 04, 2021)
 
 ENHANCEMENTS
