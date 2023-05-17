@@ -115,6 +115,7 @@ options:
       - ALIAS
       - AFSDB
       - CNAME
+      - CAA
       - DNAME
       - HINFO
       - MX
@@ -232,6 +233,19 @@ EXAMPLES = '''
           - 5
           - mail1.example.com
 
+- name: Ensure a CAA record at apex of zone with a single answer
+  ns1_record:
+    apiKey: "{{ ns1_token }}"
+    name: test.com
+    zone: test.com
+    state: present
+    type: CAA
+    answers:
+      - answer:
+          - 0
+          - issue
+          - letsencrypt.org
+
 - name: Register list of datasources
   ns1_datasource_info
     apiKey: "{{ ns1_token }}"
@@ -285,6 +299,7 @@ RECORD_TYPES = [
     'ALIAS',
     'AFSDB',
     'CNAME',
+    'CAA',
     'DNAME',
     'HINFO',
     'MX',
