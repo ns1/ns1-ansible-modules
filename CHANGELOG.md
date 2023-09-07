@@ -1,4 +1,8 @@
-## 3.0.2 (March 30, 2022)
+## 3.1.1 (September 7, 2023)
+ENHANCEMENTS:
+* Adds support for CAA record type
+
+## 3.1.0 (March 30, 2022)
 ENHANCEMENTS:
 * Adds support for TSIG
 
