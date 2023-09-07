@@ -114,8 +114,8 @@ options:
       - AAAA
       - ALIAS
       - AFSDB
-      - CNAME
       - CAA
+      - CNAME
       - DNAME
       - HINFO
       - MX
@@ -298,8 +298,8 @@ RECORD_TYPES = [
     'AAAA',
     'ALIAS',
     'AFSDB',
-    'CNAME',
     'CAA',
+    'CNAME',
     'DNAME',
     'HINFO',
     'MX',
