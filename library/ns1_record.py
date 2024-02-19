@@ -269,7 +269,8 @@ RETURN = '''
 '''
 
 import copy  # noqa
-import ruamel.yaml as yaml
+from ruamel.yaml import YAML
+import sys
 
 try:
     from ansible.module_utils.ns1 import NS1ModuleBase
@@ -548,8 +549,10 @@ class NS1Record(NS1ModuleBase):
         :type : Bool
         """
         # convert dictionaries to yaml txt dump
-        before_yaml = yaml.safe_dump(before, default_flow_style=False)
-        after_yaml = yaml.safe_dump(after, default_flow_style=False)
+        yaml=YAML(typ='safe')
+        yaml.default_flow_style = False
+        before_yaml = yaml.dump(before, sys.stdout)
+        after_yaml = yaml.dump(after, sys.stdout)
 
         # build the final dict to pass into exit_json
         if self.module._diff:
