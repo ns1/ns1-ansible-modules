@@ -160,7 +160,7 @@
         assert:
           that:
             - a_filter_purge is changed
-            - a_filter_purge.record.filters | length == 0
+            - a_filter_purge.record.filters is not defined
 
       - name: Test meta update
         local_action:

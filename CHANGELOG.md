@@ -1,3 +1,7 @@
+## 3.1.2 (October 10, 2024)
+BUGFIX:
+* Fix deprecated use of raumel.yaml
+
 ## 3.1.1 (September 7, 2023)
 ENHANCEMENTS:
 * Adds support for CAA record type
