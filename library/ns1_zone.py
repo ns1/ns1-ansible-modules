@@ -451,16 +451,8 @@ class NS1Zone(NS1ModuleBase):
         diff = self.diff_params(have, want)
         # perform deep comparison of secondaries if primary exists and has diff
         if "primary" in have and "primary" in diff:
-            have_secondaries = have["primary"].get("secondaries")
-            want_secondaries = want["primary"].get("secondaries")
-            # if no difference in values, remove secondaries from diff results
-            if not self.diff_in_secondaries(
-                have_secondaries, want_secondaries
-            ):
-                diff["primary"].pop("secondaries", None)
-                # if secondaries was only key in primary, remove primary
-                if not diff["primary"]:
-                    diff.pop("primary", None)
+            if 'enabled' not in diff["primary"] or not diff["primary"]["enabled"]:
+                diff["primary"]["enabled"] = have["primary"].get("enabled", True)
         return diff
 
     def diff_in_secondaries(self, have_secondaries, want_secondaries):

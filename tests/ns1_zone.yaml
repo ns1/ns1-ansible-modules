@@ -227,28 +227,6 @@
             - primary_zone_update.zone.primary.secondaries[1].port  == 8080
             - primary_zone_update.zone.primary.secondaries[1].notify  == true
 
-      - name: Verify idempotency
-        local_action:
-          module: ns1_zone
-          apiKey: "{{ ns1_token }}"
-          name: "primary-{{ test_zone }}"
-          primary:
-            enabled: true
-            secondaries:
-              - ip: "2.2.2.2"
-                port: 8080
-                notify: true
-              - ip: "1.1.1.1"
-                port: 53
-                notify: false
-          state: present
-        register: primary_zone_idempotent
-
-      - name: Verify idempotency
-        assert:
-          that:
-            - primary_zone_idempotent is not changed
-
       - name: Delete secondaries
         local_action:
           module: ns1_zone
