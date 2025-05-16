@@ -123,13 +123,16 @@
           apiKey: "{{ ns1_token }}"
           name: "secondary-{{ test_zone }}"
           secondary:
-            enabled: True
-            primary_ip: "1.1.1.1"
+            enabled: true
+            primary_ip: "172.65.64.6"
+            other_ips: ["198.41.144.240/28"]
+            other_notify_only: [true]
             tsig:
               enabled: true
-              hash: "hmac-256"
-              name: "testkey"
-              key: "fookey"
+              hash: "hmac-sha256"
+              name: "tsig-key"
+              key: "GXpYfmHV/i9mUiqy7Ke/HNY/xaccqBVeksbA/4xqqFo="
+              signed_notifies: true
           state: present
         register: secondary_zone
 
@@ -146,7 +149,7 @@
           apiKey: "{{ ns1_token }}"
           name: "secondary-{{ test_zone }}"
           secondary:
-            enabled: False
+            enabled: false
           state: present
         register: secondary_zone_disabled
 
