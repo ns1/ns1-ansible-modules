@@ -297,6 +297,7 @@ class NS1Zone(NS1ModuleBase):
                         required=False, type="int", default=None
                     ),
                     other_ips=dict(required=False, type="list", default=None),
+                    other_notify_only=dict(required=False, type="list", default=None, elements="bool"),
                     other_ports=dict(
                         required=False, type="list", default=None
                     ),
@@ -309,6 +310,7 @@ class NS1Zone(NS1ModuleBase):
                             hash=dict(type="str", default=None),
                             key=dict(type="str", default=None),
                             name=dict(type="str", default=None),
+                            signed_notifies=dict(type="bool", default=None),
                         ),
                     ),
                 ),
