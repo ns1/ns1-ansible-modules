@@ -1,3 +1,11 @@
+## 3.2 (May 16, 2025)
+BUGFIX:
+* Fix deprecated use of raumel.yaml
+
+ENHANCEMENTS:
+* Add support for separate zone transfer notify servers
+* Upgrade ns1-python sdk to latest version.
+
 ## 3.1.3 (October 10, 2024)
 BUGFIX:
 * Fix deprecated use of raumel.yaml
