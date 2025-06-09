@@ -25,7 +25,7 @@ ansible-galaxy install ns1.ns1
 # your requirements.txt may be in a different location. 
 pip install -r ~/.ansible/roles/ns1.ns1/requirements.txt
 
-# install with curl
+# install latest with curl
 pip install -r <(curl -s https://raw.githubusercontent.com/ns1/ns1-ansible-modules/refs/heads/master/requirements.txt)
 
 ```
@@ -38,7 +38,7 @@ Previous versions of these modules can be installed from ansible-galaxy by inclu
 
 ## Unit Tests
 
-Unit tests use pytest (`pip install pytest`). Python 2.7 also requires mock to be installed (`pip install mock`).
+Unit tests use pytest (`pip install pytest`). 
 
 ```shell
 	git clone https://github.com/ns1/ns1-ansible-modules.git
@@ -57,7 +57,7 @@ Integration tests can be executed by using ansible directly.
 
 You can use any test zone to get started, the only requirement is that it's not yet defined on the NS1 platform. That is, you do not need to make the zone authoritative through your registrar for the ansible module to work correctly.
 
-The current version of the module has been tested with Ansible 2.9.4 and both Python 3.7.2 and 2.7.17.
+The current version of the module has been tested with Ansible 2.18.6 and Python 3.13.3.
 
 # Examples
 
