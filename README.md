@@ -14,11 +14,21 @@ Completed Modules:
 
 # Installation
 
-1. Install this role from ansible-galaxy. 
-   ```ansible-galaxy install ns1.ns1```
+1. Install this role from ansible-galaxy.
+```shell
+ansible-galaxy install ns1.ns1
+```
 
-2. Install NS1 Python SDK version 0.9.19 or greater. Additional information can be found here [ns1-python](https://github.com/ns1/ns1-python).
-   ```pip install ns1-python``` 
+2. Install the dependencies from [requirements.txt](./requirements.txt).
+
+```shell 
+# your requirements.txt may be in a different location. 
+pip install -r ~/.ansible/roles/ns1.ns1/requirements.txt
+
+# install with curl
+pip install -r <(curl -s https://raw.githubusercontent.com/ns1/ns1-ansible-modules/refs/heads/master/requirements.txt)
+
+```
 
 ## Installing the previous version
 
@@ -30,7 +40,7 @@ Previous versions of these modules can be installed from ansible-galaxy by inclu
 
 Unit tests use pytest (`pip install pytest`). Python 2.7 also requires mock to be installed (`pip install mock`).
 
-```
+```shell
 	git clone https://github.com/ns1/ns1-ansible-modules.git
 	cd ns1-ansible-module
 	pytest -v
@@ -39,7 +49,7 @@ Unit tests use pytest (`pip install pytest`). Python 2.7 also requires mock to b
 ## Integration Tests
 Integration tests can be executed by using ansible directly. 
 
-```
+```shell
 	git clone https://github.com/ns1/ns1-ansible-modules.git
 	cd ns1-ansible-module
 	ansible-playbook -i local tests/<name of module to test>.yaml --extra-vars ns1_token=<your NS1 API key> --extra-vars test_zone=<a zone you have at ns1>
