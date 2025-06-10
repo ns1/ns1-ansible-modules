@@ -1,6 +1,6 @@
 ## 3.2 (May 16, 2025)
 BUGFIX:
-* Fix deprecated use of raumel.yaml
+* Fix bug where `enabled` param is stipped by diff checker
 
 ENHANCEMENTS:
 * Add support for separate zone transfer notify servers
