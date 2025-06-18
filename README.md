@@ -42,7 +42,7 @@ Unit tests use pytest (`pip install pytest`).
 
 ```shell
 	git clone https://github.com/ns1/ns1-ansible-modules.git
-	cd ns1-ansible-module
+	cd ns1-ansible-modules
 	pytest -v
 ```
 
@@ -51,7 +51,7 @@ Integration tests can be executed by using ansible directly.
 
 ```shell
 	git clone https://github.com/ns1/ns1-ansible-modules.git
-	cd ns1-ansible-module
+	cd ns1-ansible-modules
 	ansible-playbook -i local tests/<name of module to test>.yaml --extra-vars ns1_token=<your NS1 API key> --extra-vars test_zone=<a zone you have at ns1>
 ```
 
