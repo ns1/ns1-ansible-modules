@@ -559,21 +559,21 @@ class NS1Record(NS1ModuleBase):
             after_yaml = after_stream.getvalue()
 
         # build the final dict to pass into exit_json
-        if self.module._diff:
-            exec_result = dict(
-                diff={'before': {}, 'after': {}})
-            if after is not None:
-                exec_result['diff']['after'] = after_yaml
-            if before is not None:
-                exec_result['diff']['before'] = before_yaml
-            if changed is not None:
-                exec_result['changed'] = changed
-            if record is not None:
-                try:
-                    exec_result['record'] = record.data
-                except AttributeError:
-                    exec_result['record'] = record
-            self.module.exit_json(**exec_result)
+
+        exec_result = dict(
+            diff={'before': {}, 'after': {}})
+        if after is not None:
+            exec_result['diff']['after'] = after_yaml
+        if before is not None:
+            exec_result['diff']['before'] = before_yaml
+        if changed is not None:
+            exec_result['changed'] = changed
+        if record is not None:
+            try:
+                exec_result['record'] = record.data
+            except AttributeError:
+                exec_result['record'] = record
+        self.module.exit_json(**exec_result)
 
         # catch if the module is not being run with --diff
         self.module.exit_json(changed=changed)

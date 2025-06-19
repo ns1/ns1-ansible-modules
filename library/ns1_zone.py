@@ -297,6 +297,7 @@ class NS1Zone(NS1ModuleBase):
                         required=False, type="int", default=None
                     ),
                     other_ips=dict(required=False, type="list", default=None),
+                    other_notify_only=dict(required=False, type="list", default=None, elements="bool"),
                     other_ports=dict(
                         required=False, type="list", default=None
                     ),
@@ -309,6 +310,7 @@ class NS1Zone(NS1ModuleBase):
                             hash=dict(type="str", default=None),
                             key=dict(type="str", default=None),
                             name=dict(type="str", default=None),
+                            signed_notifies=dict(type="bool", default=None),
                         ),
                     ),
                 ),
@@ -449,16 +451,8 @@ class NS1Zone(NS1ModuleBase):
         diff = self.diff_params(have, want)
         # perform deep comparison of secondaries if primary exists and has diff
         if "primary" in have and "primary" in diff:
-            have_secondaries = have["primary"].get("secondaries")
-            want_secondaries = want["primary"].get("secondaries")
-            # if no difference in values, remove secondaries from diff results
-            if not self.diff_in_secondaries(
-                have_secondaries, want_secondaries
-            ):
-                diff["primary"].pop("secondaries", None)
-                # if secondaries was only key in primary, remove primary
-                if not diff["primary"]:
-                    diff.pop("primary", None)
+            if 'enabled' not in diff["primary"] or not diff["primary"]["enabled"]:
+                diff["primary"]["enabled"] = have["primary"].get("enabled", True)
         return diff
 
     def diff_in_secondaries(self, have_secondaries, want_secondaries):
