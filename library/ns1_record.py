@@ -44,7 +44,7 @@ options:
     required: false
   state:
     description:
-      - Whether the record should be present or not.  Use C(present) to create
+      - Whether the record should be present or not. Use C(present) to create
         or update and C(absent) to delete.
     type: str
     default: present
@@ -85,6 +85,22 @@ options:
           - Region (Answer Group) that the answer belongs to.
         type: str
         required: false
+      feeds:
+        description:
+          - An array of feeds associated with this answer.
+        type: list
+        required: false
+        suboptions:
+          feed:
+            description:
+              - The ID of the data feed.
+            type: str
+            required: true
+          source:
+            description:
+              - The ID of the data source.
+            type: str
+            required: true
   ignore_missing_zone:
     description:
       - Attempting to delete a record from a zone that is not present will
@@ -118,6 +134,7 @@ options:
       - CNAME
       - DNAME
       - HINFO
+      - HTTPS
       - MX
       - NAPTR
       - NS
@@ -158,6 +175,22 @@ options:
           - The filters' configuration
         type: dict
         required: false
+  feeds:
+    description:
+      - An array of feeds for the record, to manage data sources.
+    type: list
+    required: false
+    suboptions:
+      feed:
+        description:
+          - The ID of the data feed.
+        type: str
+        required: false
+      source:
+        description:
+          - The ID of the data source.
+        type: str
+          required: false
   ttl:
     description:
       - The TTL of the record.
@@ -246,10 +279,23 @@ EXAMPLES = '''
           - issue
           - letsencrypt.org
 
+- name: Ensure an HTTPS record at apex of zone
+  ns1_record:
+    apiKey: "{{ ns1_token }}"
+    name: test.com
+    zone: test.com
+    state: present
+    type: HTTPS
+    answers:
+      - answer:
+          - 0
+          - ramalama.github.io.
+
 - name: Register list of datasources
   ns1_datasource_info
     apiKey: "{{ ns1_token }}"
   register: datasource_info
+
 - name: An answer with a connected data feed
   ns1_record:
     apiKey: "{{ ns1_token }}"
@@ -291,6 +337,7 @@ RECORD_KEYS_MAP = dict(
     filters=dict(appendable=True),
     ttl=dict(appendable=False),
     regions=dict(appendable=False),
+    feeds=dict(appendable=True),
 )
 
 RECORD_TYPES = [
@@ -302,6 +349,7 @@ RECORD_TYPES = [
     'CNAME',
     'DNAME',
     'HINFO',
+    'HTTPS',
     'MX',
     'NAPTR',
     'NS',
@@ -326,6 +374,15 @@ class NS1Record(NS1ModuleBase):
                     answer=dict(type='list', default=None),
                     meta=dict(type='dict', default=None),
                     region=dict(type='str', default=None),
+                    feeds=dict(
+                        type='list',
+                        elements='dict',
+                        default=None,
+                        options=dict(
+                            feed=dict(type='str', default=None),
+                            source=dict(type='str', default=None),
+                        ),
+                    ),
                 ),
             ),
             ignore_missing_zone=dict(
@@ -343,6 +400,16 @@ class NS1Record(NS1ModuleBase):
                 options=dict(
                     filter=dict(type='str', default=None),
                     config=dict(type='dict', default=None),
+                ),
+            ),
+            feeds=dict(
+                required=False,
+                type='list',
+                elements='dict',
+                default=None,
+                options=dict(
+                    feed=dict(type='str', default=None),
+                    source=dict(type='str', default=None),
                 ),
             ),
             ttl=dict(required=False, type='int', default=3600),
@@ -406,7 +473,7 @@ class NS1Record(NS1ModuleBase):
 
     def sanitize_record(self, record):
         """Remove fields from the API-returned record that we don't want to
-        pass back, or consider when diffing.
+           pass back, or consider when diffing.
 
         :param record: JSON record information from the API.
         :type record: Any
@@ -427,8 +494,7 @@ class NS1Record(NS1ModuleBase):
             return d
 
         record = remove_ids(record)
-        for answer in record['answers']:
-            answer.pop('feeds', None)
+        
         return record
 
     def get_zone(self):
@@ -450,11 +516,11 @@ class NS1Record(NS1ModuleBase):
                     # and the user doesn't care that the zone doesn't exist
                     # nothing to do and no change
                     self.module.exit_json(changed=False)
-            else:
-                # generic error or user cares about missing zone
-                self.module.fail_json(
-                    msg="error code %s - %s " % (re.response.code, re.message)
-                )
+                else:
+                    # generic error or user cares about missing zone
+                    self.module.fail_json(
+                        msg="error code %s - %s " % (re.response.code, re.message)
+                    )
         return to_return
 
     def get_record(self, zone):
@@ -468,13 +534,13 @@ class NS1Record(NS1ModuleBase):
         to_return = None
         try:
             to_return = zone.loadRecord(self.module.params.get('name'),
-                                        self.module.params.get('type').upper())
+                                         self.module.params.get('type').upper())
         except ResourceException as re:
             if re.response.code != 404:
                 self.module.fail_json(
                     msg="error code %s - %s " % (re.response.code, re.message)
                 )
-                to_return = None
+            to_return = None
         return to_return
 
     def update(self, record):
@@ -623,7 +689,6 @@ class NS1Record(NS1ModuleBase):
                 )
                 self.record_exit(
                     changed=True, after=record.data, record=record)
-
 
 def main():
     r = NS1Record()
