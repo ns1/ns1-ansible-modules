@@ -1,3 +1,7 @@
+## 3.3 (Feb 17, 2026)
+ENHANCEMENTS:
+* Adds support for monitoring
+
 ## 3.2 (May 16, 2025)
 BUGFIX:
 * Fix bug where `enabled` param is stipped by diff checker
