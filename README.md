@@ -82,6 +82,29 @@ filters:
 ```
 Even though it still creates the correct resources. It calls out to the api to update each time.
 
+## Tags
+
+`ns1_zone` and `ns1_record` can manage tags, which requires an account with the tagging feature enabled. Tag keys and values are both strings.
+
+```
+tags:
+  env: prod
+  team: netops
+```
+
+The tags you pass are the full set of tags for the resource, so a tag that exists on the resource but is missing from the task is removed. Pass `tags: {}` to clear every tag, or leave the option out entirely to leave the existing tags untouched.
+
+Records inherit the tags of their zone. On `ns1_record`, `blocked_tags` lists the tag keys that should not be inherited.
+
+```
+tags:
+  env: staging
+blocked_tags:
+  - env
+```
+
+Unlike `tags`, `blocked_tags` honours `record_mode`, so `record_mode: append` adds to the keys already blocked on the record rather than replacing them.
+
 Contributions
 ---
 Pull Requests and issues are welcome. See the [NS1 Contribution Guidelines](https://github.com/ns1/community) for more information.

@@ -185,6 +185,107 @@
             - a_meta_update.record.answers[0].answer[0] == "192.168.2.1"
             - a_meta_update.record.answers | length == 1
 
+      ##########
+      # Test record tag behaviour
+      # Requires an account with the tagging feature enabled
+      ##########
+      - name: Test adding tags
+        local_action:
+          module: ns1_record
+          apiKey: "{{ ns1_token }}"
+          name: "{{ test_record }}"
+          zone: "{{ test_zone }}"
+          record_mode: purge
+          state: present
+          type: A
+          answers:
+            - answer:
+                - 192.168.2.1
+          tags:
+            env: test
+            team: netops
+          blocked_tags:
+            - env
+        register: a_add_tags
+
+      - name: Verify tags added
+        assert:
+          that:
+            - a_add_tags is changed
+            - a_add_tags.record.tags.env == "test"
+            - a_add_tags.record.tags.team == "netops"
+            - a_add_tags.record.blocked_tags == ["env"]
+
+      - name: Test tags are idempotent
+        local_action:
+          module: ns1_record
+          apiKey: "{{ ns1_token }}"
+          name: "{{ test_record }}"
+          zone: "{{ test_zone }}"
+          record_mode: purge
+          state: present
+          type: A
+          answers:
+            - answer:
+                - 192.168.2.1
+          tags:
+            env: test
+            team: netops
+          blocked_tags:
+            - env
+        register: a_same_tags
+
+      - name: Verify no change when tags match
+        assert:
+          that:
+            - a_same_tags is not changed
+
+      - name: Test updating and removing a tag
+        local_action:
+          module: ns1_record
+          apiKey: "{{ ns1_token }}"
+          name: "{{ test_record }}"
+          zone: "{{ test_zone }}"
+          record_mode: purge
+          state: present
+          type: A
+          answers:
+            - answer:
+                - 192.168.2.1
+          tags:
+            env: staging
+          blocked_tags: []
+        register: a_update_tags
+
+      - name: Verify tag updated and unlisted tag removed
+        assert:
+          that:
+            - a_update_tags is changed
+            - a_update_tags.record.tags.env == "staging"
+            - "'team' not in a_update_tags.record.tags"
+            - (a_update_tags.record.blocked_tags | default([])) | length == 0
+
+      - name: Test clearing all tags
+        local_action:
+          module: ns1_record
+          apiKey: "{{ ns1_token }}"
+          name: "{{ test_record }}"
+          zone: "{{ test_zone }}"
+          record_mode: purge
+          state: present
+          type: A
+          answers:
+            - answer:
+                - 192.168.2.1
+          tags: {}
+        register: a_clear_tags
+
+      - name: Verify tags cleared
+        assert:
+          that:
+            - a_clear_tags is changed
+            - (a_clear_tags.record.tags | default({})) | length == 0
+
       - name: Test answer purge
         local_action:
           module: ns1_record

@@ -78,6 +78,37 @@ def test_module_fail_when_required_args_missing():
             {},
             id="no_diff_dict_param",
         ),
+        pytest.param(
+            {},
+            {"tags": {"env": "prod"}},
+            {"tags": {"env": "prod"}},
+            id="missing_tags_param",
+        ),
+        pytest.param(
+            {"tags": {"env": "dev"}},
+            {"tags": {"env": "prod"}},
+            {"tags": {"env": "prod"}},
+            id="updated_tag_value",
+        ),
+        pytest.param(
+            {"tags": {"env": "prod", "team": "netops"}},
+            {"tags": {"env": "prod"}},
+            {"tags": {"env": "prod"}},
+            id="removed_tag_key",
+        ),
+        pytest.param(
+            {"tags": {"env": "prod"}},
+            {"tags": {}},
+            {"tags": {}},
+            id="cleared_tags",
+        ),
+        pytest.param(
+            {"tags": {"env": "prod", "team": "netops"}},
+            {"tags": {"team": "netops", "env": "prod"}},
+            {},
+            id="no_diff_tags",
+        ),
+        pytest.param({}, {"tags": {}}, {}, id="no_tags_either_side"),
     ],
 )
 @pytest.mark.usefixtures("mock_module_helper")
@@ -291,6 +322,13 @@ def test_check_mode(mock_zone_update, ns1_config, check_mode):
             {},
             id="all_none_suboption",
         ),
+        pytest.param(
+            {"tags": {"env": "prod"}},
+            {"tags": {"env": "prod"}},
+            id="tags_param",
+        ),
+        pytest.param({"tags": {}}, {"tags": {}}, id="empty_tags_param"),
+        pytest.param({"tags": None}, {}, id="none_tags_param"),
     ],
 )
 def test_sanitize_params(module_args, exp_params):

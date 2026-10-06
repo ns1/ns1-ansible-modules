@@ -90,6 +90,76 @@
             - zone_disable_dnssec.zone.dnssec == False
 
       ##########
+      # Test zone tag behaviour
+      # Requires an account with the tagging feature enabled
+      ##########
+      - name: Test adding tags
+        local_action:
+          module: ns1_zone
+          apiKey: "{{ ns1_token }}"
+          name: "{{ test_zone }}"
+          tags:
+            env: test
+            team: netops
+          state: present
+        register: zone_add_tags
+
+      - name: Verify tags added
+        assert:
+          that:
+            - zone_add_tags is changed
+            - zone_add_tags.zone.tags.env == "test"
+            - zone_add_tags.zone.tags.team == "netops"
+
+      - name: Test tags are idempotent
+        local_action:
+          module: ns1_zone
+          apiKey: "{{ ns1_token }}"
+          name: "{{ test_zone }}"
+          tags:
+            env: test
+            team: netops
+          state: present
+        register: zone_same_tags
+
+      - name: Verify no change when tags match
+        assert:
+          that:
+            - zone_same_tags is not changed
+
+      - name: Test updating and removing a tag
+        local_action:
+          module: ns1_zone
+          apiKey: "{{ ns1_token }}"
+          name: "{{ test_zone }}"
+          tags:
+            env: staging
+          state: present
+        register: zone_update_tags
+
+      - name: Verify tag updated and unlisted tag removed
+        assert:
+          that:
+            - zone_update_tags is changed
+            - zone_update_tags.zone.tags.env == "staging"
+            - "'team' not in zone_update_tags.zone.tags"
+
+      - name: Test clearing all tags
+        local_action:
+          module: ns1_zone
+          apiKey: "{{ ns1_token }}"
+          name: "{{ test_zone }}"
+          tags: {}
+          state: present
+        register: zone_clear_tags
+
+      - name: Verify tags cleared
+        assert:
+          that:
+            - zone_clear_tags is changed
+            - (zone_clear_tags.zone.tags | default({})) | length == 0
+
+      ##########
       # Test linked zone behaviour
       ##########
       - name: Test linked zone creation
