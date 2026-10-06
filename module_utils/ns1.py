@@ -22,8 +22,24 @@ HAS_NS1 = True
 
 try:
     from ns1 import NS1, Config
+    from ns1.rest.records import Records
 except ImportError:
     HAS_NS1 = False
+
+
+# Record level tag fields supported by the API but missing from the SDK's
+# passthrough list as of ns1-python 0.27.2.  Without them the SDK drops the
+# fields while building the request body, so tags set on a record would
+# silently never reach the API.  The zone resource already lists "tags" in its
+# own passthrough fields, so only records need this.
+RECORD_TAG_FIELDS = ["tags", "blocked_tags"]
+
+if HAS_NS1:
+    Records.PASSTHRU_FIELDS = Records.PASSTHRU_FIELDS + [
+        field
+        for field in RECORD_TAG_FIELDS
+        if field not in Records.PASSTHRU_FIELDS
+    ]
 
 
 # defaults of None passthrough and let the SDK set the default value

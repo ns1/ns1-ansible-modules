@@ -190,7 +190,7 @@ options:
         description:
           - The ID of the data source.
         type: str
-          required: false
+        required: false
   ttl:
     description:
       - The TTL of the record.
@@ -201,6 +201,27 @@ options:
     description:
       - The regions object for the record set.
     type: dict
+    required: false
+  tags:
+    description:
+      - Key/value tags to apply to the record. Both keys and values must be
+        strings.
+      - The full set of tags is replaced on each run, so a key present on the
+        record but absent from I(tags) is removed. Pass an empty dict to clear
+        all tags, or omit the option entirely to leave existing tags alone.
+      - Tags set on the parent zone are inherited by the record unless listed
+        in I(blocked_tags).
+      - Requires an account with the tagging feature enabled.
+    type: dict
+    required: false
+  blocked_tags:
+    description:
+      - A list of tag keys that should not be inherited from the parent zone.
+      - Replaced on each run unless I(record_mode) is C(append), in which case
+        the given keys are added to those already set on the record.
+      - Requires an account with the tagging feature enabled.
+    type: list
+    elements: str
     required: false
 
 extends_documentation_fragment:
@@ -291,8 +312,24 @@ EXAMPLES = '''
           - 0
           - ramalama.github.io.
 
+- name: Ensure an A record with tags, not inheriting the zone's "env" tag
+  ns1_record:
+    apiKey: "{{ ns1_token }}"
+    name: www
+    zone: test.com
+    state: present
+    type: A
+    answers:
+      - answer:
+          - 192.168.1.0
+    tags:
+      env: staging
+      team: netops
+    blocked_tags:
+      - env
+
 - name: Register list of datasources
-  ns1_datasource_info
+  ns1_datasource_info:
     apiKey: "{{ ns1_token }}"
   register: datasource_info
 
@@ -308,7 +345,7 @@ EXAMPLES = '''
             - 192.168.1.3
           meta:
             up:
-              feed: {{ datasource_info.datasources.datadog.feeds[0].id }}
+              feed: "{{ datasource_info.datasources.datadog.feeds[0].id }}"
 '''
 
 RETURN = '''
@@ -339,7 +376,15 @@ RECORD_KEYS_MAP = dict(
     ttl=dict(appendable=False),
     regions=dict(appendable=False),
     feeds=dict(appendable=True),
+    tags=dict(appendable=False),
+    blocked_tags=dict(appendable=True),
 )
+
+# record keys holding user defined tag data, which must not be walked as if
+# it were part of the record model
+TAG_KEYS = [
+    'tags',
+]
 
 RECORD_TYPES = [
     'A',
@@ -415,6 +460,10 @@ class NS1Record(NS1ModuleBase):
             ),
             ttl=dict(required=False, type='int', default=3600),
             regions=dict(required=False, type='dict', default=None),
+            tags=dict(required=False, type='dict', default=None),
+            blocked_tags=dict(
+                required=False, type='list', elements='str', default=None
+            ),
             state=dict(
                 required=False,
                 type='str',
@@ -453,6 +502,9 @@ class NS1Record(NS1ModuleBase):
                             if value is not None
                         )
                     )
+                else:
+                    # list of scalars, ie blocked_tags, nothing to filter
+                    filtered.append(subparam)
         else:
             filtered = param
         return filtered
@@ -486,6 +538,9 @@ class NS1Record(NS1ModuleBase):
                 if 'id' in d:
                     del d['id']
                 for key, val in d.items():
+                    if key in TAG_KEYS:
+                        # user defined keys, a tag named "id" is not an ID
+                        continue
                     if isinstance(val, (dict, list)):
                         remove_ids(val)
             if isinstance(d, list):
@@ -559,19 +614,27 @@ class NS1Record(NS1ModuleBase):
             input_data = self.filter_empty_subparams(key)
 
             if input_data is not None:
+                existing_data = record_data.get(key)
+                if existing_data is None and isinstance(
+                    input_data, (dict, list)
+                ):
+                    # the API omits tag fields that are unset, treat them as
+                    # empty so clearing an already empty field is not a change
+                    existing_data = type(input_data)()
+
                 if (
                     RECORD_KEYS_MAP[key]['appendable']
                     and self.module.params.get('record_mode') == 'append'
                 ):
                     # create union of input and existing record data,
                     # preserving existing order
-                    input_data = record_data[key] + [
+                    input_data = existing_data + [
                         input_obj
                         for input_obj in input_data
-                        if input_obj not in record_data[key]
+                        if input_obj not in existing_data
                     ]
 
-                if input_data != record_data[key]:
+                if input_data != existing_data:
                     changed = True
                     args[key] = input_data
 
@@ -579,7 +642,7 @@ class NS1Record(NS1ModuleBase):
         # updated with changing args to support --diff
         after_changes = copy.deepcopy(record_data)
         for k, v in args.items():
-            if after_changes[k] != v:
+            if after_changes.get(k) != v:
                 after_changes[k] = v
 
         # check mode short circuit before update

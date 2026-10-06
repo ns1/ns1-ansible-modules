@@ -1,3 +1,11 @@
+## Unreleased
+ENHANCEMENTS:
+* ns1_zone: Adds `tags` option for managing zone tags
+* ns1_record: Adds `tags` and `blocked_tags` options for managing record tags
+
+BUGFIX:
+* ns1_record: Fix malformed YAML in module documentation and examples
+
 ## 3.3 (Feb 17, 2026)
 ENHANCEMENTS:
 * Adds support for monitoring

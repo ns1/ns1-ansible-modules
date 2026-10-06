@@ -105,6 +105,17 @@ options:
     type: list
     required: false
     default: None
+  tags:
+    description:
+      - Key/value tags to apply to the zone. Both keys and values must be
+        strings.
+      - The full set of tags is replaced on each run, so a key present on the
+        zone but absent from I(tags) is removed. Pass an empty dict to clear
+        all tags, or omit the option entirely to leave existing tags alone.
+      - Requires an account with the tagging feature enabled.
+    type: dict
+    required: false
+    default: None
   secondary:
     description:
       - To create a secondary zone, you must include a secondary object.
@@ -229,6 +240,26 @@ EXAMPLES = r"""
     refresh: 200
   register: return
 
+- name: create zone with tags
+  local_action:
+    module: ns1_zone
+    apiKey: "{{ ns1_token }}"
+    name: test.com
+    state: present
+    tags:
+      env: prod
+      team: netops
+  register: return
+
+- name: remove all tags from zone
+  local_action:
+    module: ns1_zone
+    apiKey: "{{ ns1_token }}"
+    name: test.com
+    state: present
+    tags: {}
+  register: return
+
 - name: delete zone
   local_action:
     module: ns1_zone
@@ -263,6 +294,18 @@ SET_PARAMS = [
     "networks",
 ]
 
+# list of dict params that are replaced as a whole rather than merged key by
+# key during diff, so that keys dropped from the param are seen as a change
+REPLACE_PARAMS = [
+    "tags",
+]
+
+# list of params that should still be sent to the API when empty, so an empty
+# value can be used to clear the existing value
+ALLOW_EMPTY_PARAMS = [
+    "tags",
+]
+
 # list of params that should be removed before calls to API
 SANITIZED_PARAMS = [
     "state",
@@ -286,6 +329,7 @@ class NS1Zone(NS1ModuleBase):
             ttl=dict(required=False, type="int", default=None),
             link=dict(required=False, type="str", default=None),
             networks=dict(required=False, type="list", default=None),
+            tags=dict(required=False, type="dict", default=None),
             secondary=dict(
                 required=False,
                 type="dict",
@@ -353,6 +397,7 @@ class NS1Zone(NS1ModuleBase):
             ["link", "secondary"],
             ["link", "primary"],
             ["link", "refresh"],
+            ["link", "tags"],
         ]
 
         NS1ModuleBase.__init__(
@@ -375,7 +420,11 @@ class NS1Zone(NS1ModuleBase):
         def filter_empty_params(d):
             filtered = {}
             for key, val in d.items():
-                if isinstance(val, dict):
+                if key in ALLOW_EMPTY_PARAMS:
+                    # kept even when empty, an empty value clears the field
+                    if val is not None:
+                        filtered[key] = val
+                elif isinstance(val, dict):
                     nested = filter_empty_params(val)
                     if nested:
                         filtered[key] = nested
@@ -424,6 +473,12 @@ class NS1Zone(NS1ModuleBase):
         """
         diff = {}
         for param, wanted_val in want.items():
+            if param in REPLACE_PARAMS:
+                # compared as a whole so that a key removed from the param is
+                # picked up. absent in have is equivalent to empty
+                if (have.get(param) or {}) != wanted_val:
+                    diff[param] = wanted_val
+                continue
             if param not in have:
                 diff[param] = wanted_val
                 continue
